@@ -27,3 +27,8 @@ Projektaufteilung:
 • Neuronales Netz: Moritz
 Mögliche Erweiterung:
 Erkennung von Buchstaben und daraus folgend der restlichen Adressierung des Briefes
+
+# Normen
+
+Briefnormen:
+<img src="./README_pictures/Normen_Brief.png"/>

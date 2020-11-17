@@ -1,1 +1,5 @@
 .vscode
+
+# exclude dataset and saved model
+/neural_network/emnist_dataset/
+*.h5

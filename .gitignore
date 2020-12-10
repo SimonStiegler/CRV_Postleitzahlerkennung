@@ -3,3 +3,4 @@
 # exclude dataset
 /neural_network/emnist_dataset/
 .ipynb_checkpoints/*
+/emnist_dataset/

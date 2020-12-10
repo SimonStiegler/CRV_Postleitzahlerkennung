@@ -2,4 +2,4 @@
 
 # exclude dataset and saved model
 /neural_network/emnist_dataset/
-*.h5
+.ipynb_checkpoints/*

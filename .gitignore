@@ -1,5 +1,5 @@
 .vscode
 
-# exclude dataset and saved model
+# exclude dataset
 /neural_network/emnist_dataset/
 .ipynb_checkpoints/*

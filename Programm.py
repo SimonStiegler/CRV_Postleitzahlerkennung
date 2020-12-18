@@ -147,7 +147,7 @@ plt.imshow(binImg, cmap="gray")
 # %%
 # blurred = cv2.blur(binImg, (1, 1), cv2.BORDER_ISOLATED)
 # plt.imshow(blurred, cmap="gray")
-kernel = np.ones((1, 1), np.uint8)
+kernel = np.ones((5, 5), np.uint8)
 dilate = cv2.erode(binImg, kernel)
 erode = cv2.dilate(dilate, kernel)
 plt.imshow(erode, cmap="gray")
@@ -175,10 +175,6 @@ def align_straight(cannyImg):
         aligned_image = im.rotate_bound(cannyImg, -angle)
         returnAngle = -angle
     return [aligned_image, returnAngle]
-
-
-# %%
-plt.imshow(canny, cmap="gray")
 
 
 # %%
@@ -244,11 +240,14 @@ letterValue = findLetter(contours)
 if letterValue is None:
     raise SystemExit("letter not found")
 # Highlight the Contour of Find Letter and show center of Letter
-highlightedContour = aligned_image.copy()
+height, width = aligned_image.shape
+highlightedContour = np.zeros((height, width, 3))
 highlightedContour = cv2.circle(highlightedContour, (
-    letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 0, 255), thickness=-1)
+    letterValue["centerX"], letterValue["centerY"]), radius=15, color=(255, 0, 0), thickness=-1)
 cv2.drawContours(highlightedContour,
-                 letterValue["contour"], -1, (0, 0, 255), 20)
+                 contours, -1, (255, 255, 255), 1)
+cv2.drawContours(highlightedContour,
+                 letterValue["contour"], -1, (255, 0, 0), 3)
 plt.imshow(highlightedContour)
 
 # %% [markdown]

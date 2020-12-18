@@ -74,11 +74,47 @@ gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 plt.imshow(gray, cmap="gray", vmin=0, vmax=255)
 plt.title("Gray")
 
+# %% [markdown]
+# Function for getting the classes for the Binarisation
+# Get the Border for the classes of the Grayscale image to seperate in Black in white class
+# %%
+# https://www.geeksforgeeks.org/python-flatten-a-2d-numpy-array-into-1d-array/
+
+
+def getClassBorder(grayImage):
+    flattenArray = grayImage.flatten()
+    amount, binEdges, _ = plt.hist(flattenArray, bins=10)
+    maxBeginEdge = binEdges[np.where(amount == amount.max())]
+    print("amount of pixels: " + str(len(flattenArray)))
+    print("Begin of Edge of the max Grayscale Histogram: " + str(maxBeginEdge))
+    binEgde = int(maxBeginEdge - 2)
+    return binEgde
+
+# %% [markdown]
+# ## relative Blurringkernel
+# Best Blurring Result with 5 px from Brief_rotated150.jpg
+# scale = height from Adressfield / best result with blur
+# 97  = 485 / 5
+
+
+# %%
+def getBlurValue(height, blurScale):
+    scale = int(height / blurScale)
+    if scale % 2 == 0:
+        scale += 1
+    if scale < 3:
+        scale = 3
+    print("Value of the blur: " + str(scale))
+    return scale
+
+
+# %%
+binEdge = getClassBorder(gray)
+
 
 # %%
 th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
 plt.imshow(binImg, cmap="gray")
-
 
 # %%
 erode = cv2.erode(binImg, erodeKernel, iterations=1)
@@ -278,33 +314,37 @@ endX = int(width-pixelMargin)
 startY = int(stampZone[1]*pixelPerMM)
 endY = int(height-pixelMargin)
 addressField = letterGray[startY:endY, startX:endX]
+[heightAF, widthAF] = addressField.shape
 plt.imshow(addressField, cmap="gray")
 
 
 # %%
-th, binAF = cv2.threshold(addressField, 128, 255, cv2.THRESH_BINARY)
+# addressField
+blurrValueAF = getBlurValue(heightAF, 97)
+blurrAFKernel = (blurrValueAF, blurrValueAF)
+blurrAF = cv2.blur(addressField, blurrAFKernel)
+plt.imshow(blurrAF, cmap="gray")
+
+# %% [markdown]
+# Function for getting the classes for the Binarisation
+# Get the Border for the classes of the Grayscale image to seperate in Black in white class
+# %%
+binEdge = getClassBorder(addressField)
+
+
+# %%
+th, binAF = cv2.threshold(blurrAF, binEdge, 255, cv2.THRESH_BINARY)
 plt.imshow(binAF, cmap="gray")
 
-
 # %%
-binAF = cv2.dilate(addressField, (3, 3), iterations=1)
-plt.imshow(binAF, cmap="gray")
-
-
-# %%
-canny = cv2.Canny(binAF, 150, 200)
-plt.imshow(canny, cmap="gray")
-
-
-# %%
-canny = cv2.dilate(canny, (7, 7), iterations=1)
+canny = cv2.Canny(binAF, 100, 200)
 plt.imshow(canny, cmap="gray")
 
 
 # %%
 imgAF, contoursAF, hierachyAF = cv2.findContours(
-    canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-[heightAF, widthAF] = binAF.shape
+    binAF, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
 contourImg = np.zeros((heightAF, widthAF, 3))
 for index, contour in enumerate(contoursAF):
     r = random.random()

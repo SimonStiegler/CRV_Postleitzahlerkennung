@@ -27,7 +27,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.35(3).jpeg"
+imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.34(3).jpeg"
 # Rotation Letter not working
 # Brief_correct01.jpg Rotated 90°
 # Brief_correct02.jpg Rotatad 180°
@@ -42,9 +42,12 @@ imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.35(3).jpeg"
 # WhatsApp Image 2020-12-10 at 12.25.34(1).jpeg 320°
 # WhatsApp Image 2020-12-10 at 12.25.34(2).jpeg 180°
 
+#  Gray Rotation not working
+
 
 # Character Finding not Working
 # WhatsApp Image 2020-12-10 at 12.25.33.jpeg
+# WhatsApp Image 2020-12-10 at 12.25.35(3).jpeg character to close to each other
 # Character Found
 # Brief_rotated340.jpg
 
@@ -62,7 +65,9 @@ characterEK = np.ones((characterDilateErode, characterDilateErode), "uint8")
 
 # C5/6 Scale  220x110
 C_5_6_Metrics = [220, 110]
+C_6_Metrics = [114, 162]
 C_5_6_Scale = [1.8, 2.4]
+C_6_Scale = [1.22, 1.62]
 stampZone = [74, 40]
 margin = 15
 stampMinSize = [28, 15]
@@ -88,7 +93,6 @@ plt.title("Original")
 # https://www.geeksforgeeks.org/python-thresholding-techniques-using-opencv-set-3-otsu-thresholding/
 
 # %%
-# thresh1 = cv2.adaptiveThreshold(blurred,255,125,cv2.THRESH_BINARY,11,5)
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 plt.imshow(gray, cmap="gray", vmin=0, vmax=255)
 plt.title("Gray")
@@ -134,6 +138,7 @@ def getBlurValue(height, blurScale):
 th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
 plt.imshow(binImg, cmap="gray")
 
+
 # %%
 canny = cv2.Canny(binImg, 0, 30)
 plt.imshow(canny, cmap="gray")
@@ -165,6 +170,7 @@ plt.imshow(canny, cmap="gray")
 
 # %%
 [aligned_image, letterAngle] = align_straight(canny)
+aligned_gray = im.rotate_bound(gray, letterAngle)
 plt.imshow(aligned_image, cmap="gray")
 plt.title("straight-aligned")
 
@@ -201,17 +207,22 @@ def findLetter(contours):
         minArea = cv2.minAreaRect(contour)
         width = minArea[1][0]
         height = minArea[1][1]
-        scale = width/height
+        scale = width / height
+        c_6 = scale > C_6_Scale[0] and scale < C_6_Scale[1]
+        c_5_6 = scale > C_5_6_Scale[0] and scale < C_5_6_Scale[1]
+        metric = C_5_6_Metrics[0]
+        if c_6:
+            metric = C_6_Metrics[0]
         print("Contour: " + str(i) + " / scale: " + str(scale) +
               " / width: " + str(width) + " / height:" + str(height))
-        if(scale > C_5_6_Scale[0] and scale < C_5_6_Scale[1]):
+        if(c_6 or c_5_6):
             letter = {
                 "width": int(width),
                 "height": int(height),
                 "centerX": int(minArea[0][0]),
                 "centerY": int(minArea[0][1]),
-                "contour": contour
-            }
+                "contour": contour,
+                "metric": metric}
             return letter
 
 
@@ -236,17 +247,19 @@ xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
 yStart = int(letterValue["centerY"]-letterValue["height"]/2)
 yEnd = int(letterValue["centerY"]+letterValue["height"]/2)
 letter = aligned_image[yStart:yEnd, xStart:xEnd]
+rotatedGray = aligned_gray[yStart:yEnd, xStart:xEnd]
 plt.imshow(letter, cmap="gray")
 
 
 # %%
-pixelPerMM = letterValue["width"]/C_5_6_Metrics[0]
+pixelPerMM = letterValue["width"]/letterValue["metric"]
 # StampZone [width, height] amount of Pixel
 stampZoneMetrics = [int(stampZone[0]*pixelPerMM), int(stampZone[1]*pixelPerMM)]
 # get the rigth Top StampZone
 rightTop = letter[0:stampZoneMetrics[1],
                   letterValue["width"]-stampZoneMetrics[0]:letterValue["width"]]
 plt.imshow(rightTop, cmap="gray")
+plt.title("right Top")
 
 # %% [markdown]
 # ### Check if stamp is there
@@ -293,23 +306,14 @@ def align_correct(roiLetter, pixelPerMM):
 
 # %%
 [correct_aligned, turnAngle] = align_correct(letter, pixelPerMM)
-letterAngle = (letterAngle+turnAngle) % 360
 plt.imshow(correct_aligned, cmap="gray")
 plt.title("correct-aligned")
 
 
 # %%
-rotatedGray = im.rotate_bound(gray, letterAngle)
-imgStamp, cStamp, hStamp = cv2.findContours(
-    rotatedGray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-showRotatedGray = np.zeros((heightImg, widthImg, 3))
-cv2.drawContours(showRotatedGray, cStamp, -1, (255, 255, 255), 5)
-plt.imshow(showRotatedGray, cmap="gray")
+letterGray = im.rotate_bound(rotatedGray, turnAngle)
+plt.imshow(rotatedGray, cmap="gray")
 
-
-# %%
-letterGray = rotatedGray[yStart:yEnd, xStart:xEnd]
-plt.imshow(letterGray, cmap="gray")
 
 # %% [markdown]
 # ## Get AddressField
@@ -338,8 +342,7 @@ plt.imshow(blurrAF, cmap="gray")
 # Function for getting the classes for the Binarisation
 # Get the Border for the classes of the Grayscale image to seperate in Black in white class
 # %%
-binEdge = getClassBorder(addressField)
-
+binEdge = getClassBorder(addressField, [50, 200])
 
 # %%
 th, binAF = cv2.threshold(blurrAF, binEdge, 255, cv2.THRESH_BINARY)
@@ -362,39 +365,13 @@ for index, contour in enumerate(contoursAF):
     cv2.drawContours(contourImg, contoursAF, index, (r, g, b), 5)
 plt.imshow(contourImg)
 
-
-# %%
-# imgAF,charContours,hierachyAF = cv2.findContours(canny,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-# for index,contour in enumerate(charContours):
-
-#     r = random.random()
-#     g = random.random()
-#     b = random.random()
-#     cv2.drawContours(imgAF,charContours , index, (r,g,b), 5)
-# plt.imshow(imgAF)
-# cv2.drawContours(addressField,contoursAF,-1,(255,255,255),-1)
-# plt.imshow(addressField)
-
-
-# %%
-# dilate = cv2.dilate(erode,dilateKernel,iterations=1)
-# addressField = cv2.dilate(addressField,(3,3),iterations=1)
-# plt.imshow(addressField,cmap="gray")
-
-
-# %%
-# imgAF,contoursAF,hierachyAF = cv2.findContours(addressField,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)
-# plt.imshow(imgAF,cmap="gray")
-
-
-# %%
-
-
 # %% [markdown]
 # ## Display Function
 # https://gist.github.com/soply/f3eec2e79c165e39c9d540e916142ae1
 
 # %%
+
+
 def show_images(images, cols=1, titles=None):
     """Display a list of images in a single figure with matplotlib.
 

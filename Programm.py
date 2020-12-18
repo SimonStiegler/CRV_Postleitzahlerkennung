@@ -27,7 +27,28 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/Brief_rotated150.jpg"
+imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.35(3).jpeg"
+# Rotation Letter not working
+# Brief_correct01.jpg Rotated 90°
+# Brief_correct02.jpg Rotatad 180°
+# Brief_rotated150.jpg Rotated 180°
+# Brief_rotated270.jpg Rotated 270°
+# Brief02_correct.jpg Rotated 180°
+# Brief02_rotated70.jpg Rotated 180 ° bad Example stamp could not be found
+# Brief02_rotated160.jpg 340° bad  example
+# WhatsApp Image 2020-12-10 at 12.25.33(1).jpeg 180° other format
+# WhatsApp Image 2020-12-10 at 12.25.33(2).jpeg
+# WhatsApp Image 2020-12-10 at 12.25.33(3).jpeg
+# WhatsApp Image 2020-12-10 at 12.25.34(1).jpeg 320°
+# WhatsApp Image 2020-12-10 at 12.25.34(2).jpeg 180°
+
+
+# Character Finding not Working
+# WhatsApp Image 2020-12-10 at 12.25.33.jpeg
+# Character Found
+# Brief_rotated340.jpg
+
+
 # Kernel
 blurring = 0
 dilateErode = 1
@@ -56,9 +77,7 @@ stampMinSize = [28, 15]
 image = cv2.imread(imagePath, cv2.IMREAD_COLOR)
 if image is None:
     raise SystemExit("Imagepath is not right")
-height, width, channels = image.shape
-height -= 1
-width -= 1
+heightImg, widthImg, channels = image.shape
 showImage = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 # Zeigen des Bilds
 plt.imshow(showImage)
@@ -81,10 +100,13 @@ plt.title("Gray")
 # https://www.geeksforgeeks.org/python-flatten-a-2d-numpy-array-into-1d-array/
 
 
-def getClassBorder(grayImage):
+def getClassBorder(grayImage, area=[0, 255]):
     flattenArray = grayImage.flatten()
-    amount, binEdges, _ = plt.hist(flattenArray, bins=10)
+    filtered = pydash.filter_(
+        flattenArray, lambda x: x > area[0] and x < area[1])
+    amount, binEdges, _ = plt.hist(filtered, bins=10)
     maxBeginEdge = binEdges[np.where(amount == amount.max())]
+    print("area: " + str(area))
     print("amount of pixels: " + str(len(flattenArray)))
     print("Begin of Edge of the max Grayscale Histogram: " + str(maxBeginEdge))
     binEgde = int(maxBeginEdge - 2)
@@ -109,28 +131,11 @@ def getBlurValue(height, blurScale):
 
 
 # %%
-binEdge = getClassBorder(gray)
-
-
-# %%
 th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
 plt.imshow(binImg, cmap="gray")
 
 # %%
-erode = cv2.erode(binImg, erodeKernel, iterations=1)
-plt.imshow(erode, cmap="gray")
-plt.title("dilate")
-
-
-# %%
-dilate = cv2.dilate(erode, dilateKernel, iterations=1)
-plt.imshow(dilate, cmap="gray")
-plt.title("erode")
-
-
-# %%
-canny = cv2.Canny(dilate, 0, 30)
-height, width = canny.shape
+canny = cv2.Canny(binImg, 0, 30)
 plt.imshow(canny, cmap="gray")
 plt.title("Canny")
 
@@ -283,7 +288,7 @@ def align_correct(roiLetter, pixelPerMM):
     if stamp_found:
         return [roiLetter, 0]
     else:
-        return [im.rotate_bound(roiLetter, 180), 90]
+        return [im.rotate_bound(roiLetter, 180), 180]
 
 
 # %%
@@ -295,7 +300,11 @@ plt.title("correct-aligned")
 
 # %%
 rotatedGray = im.rotate_bound(gray, letterAngle)
-plt.imshow(rotatedGray, cmap="gray")
+imgStamp, cStamp, hStamp = cv2.findContours(
+    rotatedGray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+showRotatedGray = np.zeros((heightImg, widthImg, 3))
+cv2.drawContours(showRotatedGray, cStamp, -1, (255, 255, 255), 5)
+plt.imshow(showRotatedGray, cmap="gray")
 
 
 # %%
@@ -418,10 +427,6 @@ def show_images(images, cols=1, titles=None):
 
 
 # %%
-print(hierachyAF[0][4])
-
-
-# %%
 characters = []
 for index, contour in enumerate(contoursAF):
     # [x,y,width,height]
@@ -442,6 +447,8 @@ for index, contour in enumerate(contoursAF):
         }
         characters.append(character)
         # plt.imshow(character,cmap="gray")
+if len(characters) == 0:
+    raise SystemExit("No Character with needed size found")
 show_images(pydash.map_(characters, "img"))
 
 

@@ -41,6 +41,7 @@ imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.34(3).jpeg"
 # WhatsApp Image 2020-12-10 at 12.25.33(3).jpeg
 # WhatsApp Image 2020-12-10 at 12.25.34(1).jpeg 320°
 # WhatsApp Image 2020-12-10 at 12.25.34(2).jpeg 180°
+# WhatsApp Image 2020-12-10 at 12.25.34(3).jpeg stamp not displayed
 
 #  Gray Rotation not working
 
@@ -133,14 +134,26 @@ def getBlurValue(height, blurScale):
     print("Value of the blur: " + str(scale))
     return scale
 
+# %%
+# th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
 
 # %%
-th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
+
+
+binImg = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                               cv2.THRESH_BINARY, 3, 3)
 plt.imshow(binImg, cmap="gray")
 
+# %%
+# blurred = cv2.blur(binImg, (1, 1), cv2.BORDER_ISOLATED)
+# plt.imshow(blurred, cmap="gray")
+kernel = np.ones((1, 1), np.uint8)
+dilate = cv2.erode(binImg, kernel)
+erode = cv2.dilate(dilate, kernel)
+plt.imshow(erode, cmap="gray")
 
 # %%
-canny = cv2.Canny(binImg, 0, 30)
+canny = cv2.Canny(erode, 0, 30)
 plt.imshow(canny, cmap="gray")
 plt.title("Canny")
 
@@ -312,7 +325,7 @@ plt.title("correct-aligned")
 
 # %%
 letterGray = im.rotate_bound(rotatedGray, turnAngle)
-plt.imshow(rotatedGray, cmap="gray")
+plt.imshow(letterGray, cmap="gray")
 
 
 # %% [markdown]

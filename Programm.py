@@ -11,6 +11,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 # for Rotation only cutting the picture
 import argparse
+from numpy.lib.function_base import median
 import pydash
 import random
 import imutils as im
@@ -27,7 +28,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.34(3).jpeg"
+imagePath = "./Briefe/Brief_rotated340.jpg"
 # Rotation Letter not working
 # Brief_correct01.jpg Rotated 90°
 # Brief_correct02.jpg Rotatad 180°
@@ -98,6 +99,11 @@ gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 plt.imshow(gray, cmap="gray", vmin=0, vmax=255)
 plt.title("Gray")
 
+# %%
+medianBlur = cv2.medianBlur(gray, 5)
+plt.imshow(medianBlur, cmap="gray")
+plt.title("medianblur")
+
 # %% [markdown]
 # Function for getting the classes for the Binarisation
 # Get the Border for the classes of the Grayscale image to seperate in Black in white class
@@ -140,9 +146,10 @@ def getBlurValue(height, blurScale):
 # %%
 
 
-binImg = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+binImg = cv2.adaptiveThreshold(medianBlur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                cv2.THRESH_BINARY, 3, 3)
 plt.imshow(binImg, cmap="gray")
+plt.title("adaptive Threshold")
 
 # %%
 # blurred = cv2.blur(binImg, (1, 1), cv2.BORDER_ISOLATED)
@@ -151,42 +158,16 @@ kernel = np.ones((5, 5), np.uint8)
 dilate = cv2.erode(binImg, kernel)
 erode = cv2.dilate(dilate, kernel)
 plt.imshow(erode, cmap="gray")
+plt.title("erode and Dilate")
 
 # %%
-canny = cv2.Canny(erode, 0, 30)
+canny = cv2.Canny(erode, 0, 10)
 plt.imshow(canny, cmap="gray")
 plt.title("Canny")
 
-
-# %%
-def align_straight(cannyImg):
-    img, contours, hierachies = cv2.findContours(
-        cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    for index, hierachy in enumerate(hierachies):
-        hNext, hPrev, hChild, hParent = hierachy[0]
-        if (hChild != -1) and (hParent == -1):  # Extract Parent contour
-            contour = contours[0][index]
-    center, [letter_W, letter_H], angle = cv2.minAreaRect(contours[1])
-    print(center, [letter_W, letter_H], angle)
-    if letter_W < letter_H:
-        aligned_image = im.rotate_bound(cannyImg, -angle+90)
-        returnAngle = -angle+90
-    else:
-        aligned_image = im.rotate_bound(cannyImg, -angle)
-        returnAngle = -angle
-    return [aligned_image, returnAngle]
-
-
-# %%
-[aligned_image, letterAngle] = align_straight(canny)
-aligned_gray = im.rotate_bound(gray, letterAngle)
-plt.imshow(aligned_image, cmap="gray")
-plt.title("straight-aligned")
-
-
 # %%
 img, contours, hierachy = cv2.findContours(
-    aligned_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 # Hierarchie [Previous, Next, Child, Parent]
 
 
@@ -200,6 +181,45 @@ contours.sort(reverse=True, key=sizeSort)
 for index, contour in enumerate(contours):
     if(index < 6):
         print(contour.size)
+
+
+# %%
+def align_straight(cannyImg):
+    img, contours, hierachies = cv2.findContours(
+        cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    for index, hierachy in enumerate(hierachies):
+        hNext, hPrev, hChild, hParent = hierachy[0]
+        if (hChild != -1) and (hParent == -1):  # Extract Parent contour
+            contour = contours[0][index]
+    center, [letter_W, letter_H], angle = cv2.minAreaRect(contours[1])
+    # Highlight the chossen Contour for Turning
+    [heightImg, widthImg] = img.shape
+    highlightedContour = np.zeros((heightImg, widthImg, 3))
+    cv2.drawContours(highlightedContour,
+                     contours, -1, (255, 255, 255), 1)
+    # highlightedContour = cv2.circle(
+    #     highlightedContour, (int(center[0]), int(center[1])), radius=50, color=(255, 0, 0), thickness=-1)
+    cv2.drawContours(highlightedContour,
+                     contours, 1, (255, 0, 0), 10)
+    plt.imshow(highlightedContour)
+    plt.title("Contour For Turning")
+    print(center, [letter_W, letter_H], angle)
+    if letter_W < letter_H:
+        aligned_image = im.rotate_bound(cannyImg, -angle+90)
+        returnAngle = -angle+90
+    else:
+        aligned_image = im.rotate_bound(cannyImg, -angle)
+        returnAngle = -angle
+    return [aligned_image, returnAngle]
+
+
+# %%
+[aligned_image, letterAngle] = align_straight(canny)
+# %%
+aligned_gray = im.rotate_bound(gray, letterAngle)
+plt.imshow(aligned_image, cmap="gray")
+plt.title("straight-aligned")
+
 
 # %% [markdown]
 # ## Get the Moments
@@ -242,12 +262,16 @@ if letterValue is None:
 # Highlight the Contour of Find Letter and show center of Letter
 height, width = aligned_image.shape
 highlightedContour = np.zeros((height, width, 3))
+
+for index, contour in enumerate(contours):
+    r = random.random()
+    g = random.random()
+    b = random.random()
+    cv2.drawContours(highlightedContour, contours, index, (r, g, b), 5)
+cv2.drawContours(highlightedContour,
+                 letterValue["contour"], -1, (255, 0, 0), 15)
 highlightedContour = cv2.circle(highlightedContour, (
     letterValue["centerX"], letterValue["centerY"]), radius=15, color=(255, 0, 0), thickness=-1)
-cv2.drawContours(highlightedContour,
-                 contours, -1, (255, 255, 255), 1)
-cv2.drawContours(highlightedContour,
-                 letterValue["contour"], -1, (255, 0, 0), 3)
 plt.imshow(highlightedContour)
 
 # %% [markdown]

@@ -212,17 +212,19 @@ def findLetter(contours):
             print(contour.size)
     letter = {}
     returnAngle = 0
-    scale = 0
     for i, contour in enumerate(contours):
         # ( center (x,y), (width, height), angle of rotation ).
         minArea = cv2.minAreaRect(contour)
         width = minArea[1][0]
         height = minArea[1][1]
+        scale = width/height
         if height > width:
             scale = height/width
         c_6 = scale > C_6_Scale[0] and scale < C_6_Scale[1]
         c_5_6 = scale > C_5_6_Scale[0] and scale < C_5_6_Scale[1]
         metric = C_5_6_Metrics[0]
+        print("Contour: " + str(i) + " / scale: " + str(scale) +
+              " / width: " + str(width) + " / height:" + str(height))
         if c_6:
             metric = C_6_Metrics[0]
         # if(c_6 or c_5_6):
@@ -273,22 +275,22 @@ showRotatedContour(rotated_Bin, rotContours, valueRotated)
 # ## ROI of Letter
 
 # %%
-xStart = int(letterValue["centerX"]-letterValue["width"]/2)
-xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
-yStart = int(letterValue["centerY"]-letterValue["height"]/2)
-yEnd = int(letterValue["centerY"]+letterValue["height"]/2)
+xStart = int(valueRotated["centerX"]-valueRotated["width"]/2)
+xEnd = int(valueRotated["centerX"]+valueRotated["width"]/2)
+yStart = int(valueRotated["centerY"]-valueRotated["height"]/2)
+yEnd = int(valueRotated["centerY"]+valueRotated["height"]/2)
 letter = rotated_Bin[yStart:yEnd, xStart:xEnd]
-correct_aligned_gray = rotated_Gray[yStart:yEnd, xStart:xEnd]
+letterGray = rotated_Gray[yStart:yEnd, xStart:xEnd]
 plt.imshow(letter, cmap="gray")
 plt.title("ROI letter")
 
 # %%
-pixelPerMM = letterValue["width"]/letterValue["metric"]
+pixelPerMM = valueRotated["width"]/valueRotated["metric"]
 # StampZone [width, height] amount of Pixel
 stampZoneMetrics = [int(stampZone[0]*pixelPerMM), int(stampZone[1]*pixelPerMM)]
 # get the rigth Top StampZone
 rightTop = letter[0:stampZoneMetrics[1],
-                  letterValue["width"]-stampZoneMetrics[0]:letterValue["width"]]
+                  valueRotated["width"]-stampZoneMetrics[0]:valueRotated["width"]]
 plt.imshow(rightTop, cmap="gray")
 plt.title("right Top")
 
@@ -327,7 +329,7 @@ def align_correct(roiLetter, pixelPerMM):
                         int(stampZone[1]*pixelPerMM)]
     # get the rigth Top StampZone
     rightTop = roiLetter[0:stampZoneMetrics[1],
-                         letterValue["width"]-stampZoneMetrics[0]:letterValue["width"]]
+                         valueRotated["width"]-stampZoneMetrics[0]:valueRotated["width"]]
     stamp_found = checkStamp(rightTop, pixelPerMM)
     if stamp_found:
         return [roiLetter, 0]
@@ -342,7 +344,7 @@ plt.title("correct-aligned")
 
 
 # %%
-correct_aligned_gray = im.rotate_bound(rotated_Gray, turnAngle)
+correct_aligned_gray = im.rotate_bound(letterGray, turnAngle)
 plt.imshow(correct_aligned_gray, cmap="gray")
 
 
@@ -444,7 +446,7 @@ for index, contour in enumerate(contoursAF):
     width = rect[2]
     height = rect[3]
     # 0 because of the outer
-    if(width > 5 and height > 5 and width != widthAF and hierachyAF[0][index][3] == 0):
+    if(width > 5 and height > 5 and width != widthAF):
         img = binAF[y:y+height, x:x+width]
         character = {
             "img": img,

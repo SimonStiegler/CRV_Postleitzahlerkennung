@@ -141,29 +141,58 @@ def getBlurValue(height, blurScale):
     return scale
 
 # %%
+
+
+def sizeSort(element):
+    return len(element)
+
+# %%
+
+
+def showRotatedContour(img, contours, value):
+    height, width = img.shape
+    highlightedContour = np.zeros((height, width, 3))
+    for index, contour in enumerate(contours):
+        r = random.random()
+        g = random.random()
+        b = random.random()
+        cv2.drawContours(highlightedContour, contours, index, (r, g, b), 5)
+    cv2.drawContours(highlightedContour,
+                     value["contour"], -1, (255, 0, 0), 15)
+    highlightedContour = cv2.circle(highlightedContour, (
+        value["centerX"], value["centerY"]), radius=15, color=(255, 0, 0), thickness=-1)
+    plt.imshow(highlightedContour)
+
+# %%
 # th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
 
 # %%
 
 
 binImg = cv2.adaptiveThreshold(medianBlur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                               cv2.THRESH_BINARY, 3, 3)
+                               cv2.THRESH_BINARY_INV, 5, 5)
 plt.imshow(binImg, cmap="gray")
 plt.title("adaptive Threshold")
 
 # %%
 # blurred = cv2.blur(binImg, (1, 1), cv2.BORDER_ISOLATED)
 # plt.imshow(blurred, cmap="gray")
-kernel = np.ones((5, 5), np.uint8)
-dilate = cv2.erode(binImg, kernel)
-erode = cv2.dilate(dilate, kernel)
+kernel = np.ones((11, 11), np.uint8)
+dilate = cv2.dilate(binImg, kernel)
+erode = cv2.erode(dilate, kernel)
 plt.imshow(erode, cmap="gray")
 plt.title("erode and Dilate")
+canny = erode
 
 # %%
-canny = cv2.Canny(erode, 0, 10)
-plt.imshow(canny, cmap="gray")
-plt.title("Canny")
+# canny = cv2.Canny(erode, 20, 100)
+# plt.imshow(canny, cmap="gray")
+# plt.title("Canny")
+
+# %% [markdown]
+# ## Get the Moments
+# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
+
 
 # %%
 img, contours, hierachy = cv2.findContours(
@@ -172,107 +201,73 @@ img, contours, hierachy = cv2.findContours(
 
 
 # %%
-def sizeSort(element):
-    return len(element)
-
-
-contours.sort(reverse=True, key=sizeSort)
-# Print the 5 biggest Contoursizes
-for index, contour in enumerate(contours):
-    if(index < 6):
-        print(contour.size)
-
-
-# %%
-def align_straight(cannyImg):
-    img, contours, hierachies = cv2.findContours(
-        cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    for index, hierachy in enumerate(hierachies):
-        hNext, hPrev, hChild, hParent = hierachy[0]
-        if (hChild != -1) and (hParent == -1):  # Extract Parent contour
-            contour = contours[0][index]
-    center, [letter_W, letter_H], angle = cv2.minAreaRect(contours[1])
-    # Highlight the chossen Contour for Turning
-    [heightImg, widthImg] = img.shape
-    highlightedContour = np.zeros((heightImg, widthImg, 3))
-    cv2.drawContours(highlightedContour,
-                     contours, -1, (255, 255, 255), 1)
-    # highlightedContour = cv2.circle(
-    #     highlightedContour, (int(center[0]), int(center[1])), radius=50, color=(255, 0, 0), thickness=-1)
-    cv2.drawContours(highlightedContour,
-                     contours, 1, (255, 0, 0), 10)
-    plt.imshow(highlightedContour)
-    plt.title("Contour For Turning")
-    print(center, [letter_W, letter_H], angle)
-    if letter_W < letter_H:
-        aligned_image = im.rotate_bound(cannyImg, -angle+90)
-        returnAngle = -angle+90
-    else:
-        aligned_image = im.rotate_bound(cannyImg, -angle)
-        returnAngle = -angle
-    return [aligned_image, returnAngle]
-
-
-# %%
-[aligned_image, letterAngle] = align_straight(canny)
-# %%
-aligned_gray = im.rotate_bound(gray, letterAngle)
-plt.imshow(aligned_image, cmap="gray")
-plt.title("straight-aligned")
-
-
-# %% [markdown]
-# ## Get the Moments
-# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
-
-# %%
 # https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
 
 
 def findLetter(contours):
+    contours.sort(reverse=True, key=sizeSort)
+    # Print the 5 biggest Contoursizes
+    for index, contour in enumerate(contours):
+        if(index < 6):
+            print(contour.size)
     letter = {}
+    returnAngle = 0
+    scale = 0
     for i, contour in enumerate(contours):
         # ( center (x,y), (width, height), angle of rotation ).
         minArea = cv2.minAreaRect(contour)
         width = minArea[1][0]
         height = minArea[1][1]
-        scale = width / height
+        if height > width:
+            scale = height/width
         c_6 = scale > C_6_Scale[0] and scale < C_6_Scale[1]
         c_5_6 = scale > C_5_6_Scale[0] and scale < C_5_6_Scale[1]
         metric = C_5_6_Metrics[0]
         if c_6:
             metric = C_6_Metrics[0]
-        print("Contour: " + str(i) + " / scale: " + str(scale) +
-              " / width: " + str(width) + " / height:" + str(height))
+        # if(c_6 or c_5_6):
         if(c_6 or c_5_6):
+            if(c_5_6):
+                if width < height:
+                    returnAngle = -minArea[2]+90
+                else:
+                    returnAngle = -minArea[2]
             letter = {
                 "width": int(width),
                 "height": int(height),
                 "centerX": int(minArea[0][0]),
                 "centerY": int(minArea[0][1]),
                 "contour": contour,
-                "metric": metric}
+                "metric": metric,
+                "angle": returnAngle}
             return letter
 
 
 # %%
-letterValue = findLetter(contours)
-if letterValue is None:
+valueOriginal = findLetter(contours)
+if valueOriginal is None:
     raise SystemExit("letter not found")
 # Highlight the Contour of Find Letter and show center of Letter
-height, width = aligned_image.shape
-highlightedContour = np.zeros((height, width, 3))
+showRotatedContour(canny, contours, valueOriginal)
 
-for index, contour in enumerate(contours):
-    r = random.random()
-    g = random.random()
-    b = random.random()
-    cv2.drawContours(highlightedContour, contours, index, (r, g, b), 5)
-cv2.drawContours(highlightedContour,
-                 letterValue["contour"], -1, (255, 0, 0), 15)
-highlightedContour = cv2.circle(highlightedContour, (
-    letterValue["centerX"], letterValue["centerY"]), radius=15, color=(255, 0, 0), thickness=-1)
-plt.imshow(highlightedContour)
+# %%
+rotated_Bin = im.rotate_bound(canny, valueOriginal["angle"])
+plt.imshow(rotated_Bin, cmap="gray")
+plt.title("Rotated Image")
+
+# %%
+rotated_Gray = im.rotate_bound(gray, valueOriginal["angle"])
+plt.imshow(rotated_Gray, cmap="gray")
+plt.title("Rotated Gray")
+
+# %% [markdown]
+# find the Contours of the rotated Image
+# %%
+rotImg, rotContours, rotHierachy = cv2.findContours(
+    rotated_Bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+valueRotated = findLetter(rotContours)
+showRotatedContour(rotated_Bin, rotContours, valueRotated)
+
 
 # %% [markdown]
 # ## ROI of Letter
@@ -282,10 +277,10 @@ xStart = int(letterValue["centerX"]-letterValue["width"]/2)
 xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
 yStart = int(letterValue["centerY"]-letterValue["height"]/2)
 yEnd = int(letterValue["centerY"]+letterValue["height"]/2)
-letter = aligned_image[yStart:yEnd, xStart:xEnd]
-rotatedGray = aligned_gray[yStart:yEnd, xStart:xEnd]
+letter = rotated_Bin[yStart:yEnd, xStart:xEnd]
+correct_aligned_gray = rotated_Gray[yStart:yEnd, xStart:xEnd]
 plt.imshow(letter, cmap="gray")
-
+plt.title("ROI letter")
 
 # %%
 pixelPerMM = letterValue["width"]/letterValue["metric"]
@@ -347,22 +342,22 @@ plt.title("correct-aligned")
 
 
 # %%
-letterGray = im.rotate_bound(rotatedGray, turnAngle)
-plt.imshow(letterGray, cmap="gray")
+correct_aligned_gray = im.rotate_bound(rotated_Gray, turnAngle)
+plt.imshow(correct_aligned_gray, cmap="gray")
 
 
 # %% [markdown]
 # ## Get AddressField
 
 # %%
-height, width = letterGray.shape
+height, width = correct_aligned_gray.shape
 pixelMargin = margin*pixelPerMM
 addressField = letter.copy()
 startX = int(pixelMargin)
 endX = int(width-pixelMargin)
 startY = int(stampZone[1]*pixelPerMM)
 endY = int(height-pixelMargin)
-addressField = letterGray[startY:endY, startX:endX]
+addressField = correct_aligned_gray[startY:endY, startX:endX]
 [heightAF, widthAF] = addressField.shape
 plt.imshow(addressField, cmap="gray")
 

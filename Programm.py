@@ -27,7 +27,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.33(2).jpeg"
+imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.36(5).jpeg"
 # Kernel
 blurring = 0
 dilateErode = 1

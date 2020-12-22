@@ -27,7 +27,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/mo_1.jpg"
+imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.33(2).jpeg"
 # Kernel
 blurring = 0
 dilateErode = 1
@@ -363,41 +363,51 @@ def getBlurValue(height, blurScale):
 # %%
 blurrValueAF = getBlurValue(heightAF, 97)
 blurrAFKernel = (blurrValueAF, blurrValueAF)
-blurrAF = cv2.blur(addressField, blurrAFKernel)
+blurrAF = cv2.medianBlur(addressField, blurrValueAF)
 plt.imshow(blurrAF, cmap="gray")
 
 
-# %%
-def getClassBorder(grayImage, area=[0, 255]):
-    flattenArray = grayImage.flatten()
-    filtered = pydash.filter_(
-        flattenArray, lambda x: x > area[0] and x < area[1])
-    amount, binEdges, _ = plt.hist(filtered, bins=9)
-    maxBeginEdge = binEdges[np.where(amount == amount.max())]
-    print("area: " + str(area))
-    print("amount of pixels: " + str(len(flattenArray)))
-    print("Begin of Edge of the max Grayscale Histogram: " + str(maxBeginEdge))
-    binEgde = int(maxBeginEdge - 2)
-    return binEgde
+# # %%
+# def getClassBorder(grayImage, area=[0, 255]):
+#     flattenArray = grayImage.flatten()
+#     filtered = pydash.filter_(
+#         flattenArray, lambda x: x > area[0] and x < area[1])
+#     amount, binEdges, _ = plt.hist(filtered, bins=9)
+#     maxBeginEdge = binEdges[np.where(amount == amount.max())]
+#     print("area: " + str(area))
+#     print("amount of pixels: " + str(len(flattenArray)))
+#     print("Begin of Edge of the max Grayscale Histogram: " + str(maxBeginEdge))
+#     binEgde = int(maxBeginEdge - 2)
+#     return binEgde
 
 
 # %%
-binEdge = getClassBorder(addressField, [50, 200])
-
-
-# %%
-th, binAF = cv2.threshold(blurrAF, binEdge, 255, cv2.THRESH_BINARY)
+# binEdge = getClassBorder(addressField, [50, 200])
+binAF = cv2.adaptiveThreshold(blurrAF, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                              cv2.THRESH_BINARY, 5, 5)
 plt.imshow(binAF, cmap="gray")
+plt.title("Binarisation")
 
 
 # %%
-canny = cv2.Canny(binAF, 100, 200)
-plt.imshow(canny, cmap="gray")
+erodeDilate = np.ones((blurrValueAF, blurrValueAF), np.uint8)
+erode = cv2.erode(binAF, erodeDilate)
+dilate = cv2.dilate(erode, erodeDilate)
+plt.imshow(erode, cmap="gray")
+plt.title("erode/Dilate")
+# %%
+# th, binAF = cv2.threshold(blurrAF, binEdge, 255, cv2.THRESH_BINARY)
+# plt.imshow(binAF, cmap="gray")
+
+
+# %%
+# canny = cv2.Canny(binAF, 100, 200)
+# plt.imshow(canny, cmap="gray")
 
 
 # %%
 imgAF, contoursAF, hierachyAF = cv2.findContours(
-    binAF, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    dilate, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
 contourImg = np.zeros((heightAF, widthAF, 3))
 for index, contour in enumerate(contoursAF):
@@ -456,7 +466,10 @@ for index, contour in enumerate(contoursAF):
     height = rect[3]
     # 0 because of the outer
     if(width > 5 and height > 5 and width != widthAF and hierachyAF[0][index][3] == 0):
-        img = binAF[y:y+height, x:x+width]
+        # print("index: " + str(index) + " / width: " +
+        #       str(width) + " / height: " + str(height))
+        # print(hierachyAF[0][index])
+        img = dilate[y:y+height, x:x+width]
         character = {
             "img": img,
             "width": width,
@@ -468,8 +481,11 @@ for index, contour in enumerate(contoursAF):
         # plt.imshow(character,cmap="gray")
 if len(characters) == 0:
     raise SystemExit("No Character with needed size found")
-show_images(pydash.map_(characters, "img"))
-
+characterImg = pydash.map_(characters, "img")
+if(len(characterImg) > 10):
+    show_images(characterImg[0:10])
+else:
+    show_images(characterImg)
 
 # %%
 centerPoints = characters

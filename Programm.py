@@ -27,7 +27,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/WhatsApp Image 2020-12-10 at 12.25.37(3).jpeg"
+imagePath = "./Briefe/mo_2.jpg"
 # Kernel
 blurring = 0
 dilateErode = 1
@@ -937,12 +937,16 @@ print(array.shape)
 
 
 # %%
-predictions = model.german_digits_network.predict(array)
+predictions = model.mnist_cnn.predict(array)
 
 
 # %%
+plz = []
 for prediction in predictions:
-    print(np.argmax(prediction))
+    plz.append(np.argmax(prediction))
+
+print(plz)
+    
 
 
 # %%
@@ -953,31 +957,27 @@ model.show_random_image(model.raw_german_digit_train_img,
 # # Abgleich mit Datenbank
 
 # %%
-# def get_town(plz):
-#     # Verbindung, Cursor
-#     connection = sqlite3.connect("orteDE.db")
-#     cursor = connection.cursor()
+def get_town(plz):
+    # Verbindung, Cursor
+    connection = sqlite3.connect("orteDE.db")
+    cursor = connection.cursor()
+    # SQL-Abfrage
+    sql = "SELECT ortsname, bundesland FROM orte WHERE plz="+str(plz)
+    # Kontrollausgabe der SQL-Abfrage
+    # print(sql)
+    # Absenden der SQL-Abfrage
+    # Empfang des Ergebnisses
+    cursor.execute(sql)
+    # Ausgabe des Ergebnisses
+    results = cursor.fetchall()
+    for dsatz in cursor:
+        ort = dsatz[0]
+        bundesland = dsatz[1]
 
-#     # SQL-Abfrage
-#     sql = "SELECT ortsname, bundesland FROM orte WHERE plz="+str(plz)
+    # Verbindung beenden
+    connection.close()
 
-#     # Kontrollausgabe der SQL-Abfrage
-#     # print(sql)
-
-#     # Absenden der SQL-Abfrage
-#     # Empfang des Ergebnisses
-#     cursor.execute(sql)
-
-#     # Ausgabe des Ergebnisses
-#     results = cursor.fetchall()
-#     #for dsatz in cursor:
-#     #    ort = dsatz[0]
-#     #    bundesland = dsatz[1]
-
-#     # Verbindung beenden
-#     connection.close()
-
-#     return results
+    return results
 
 
 # %%
@@ -985,6 +985,7 @@ model.show_random_image(model.raw_german_digit_train_img,
 # print(get_town(74246))
 # #Example for multiple PLZ
 # print(get_town(27367))
+print(get_town(int("".join(list(map(str,plz))))))
 
 
 # %%

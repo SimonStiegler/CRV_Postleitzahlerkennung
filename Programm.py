@@ -11,7 +11,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 # for Rotation only cutting the picture
 import argparse
-from numpy.lib.function_base import median
 import pydash
 import random
 import imutils as im
@@ -28,34 +27,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/Brief_rotated150.jpg"
-# Rotation Letter not working
-# Brief_correct02.jpg Rotatad 180°
-# Brief_rotated150.jpg Rotated 180°
-# Brief_rotated270.jpg Rotated 270°
-# Brief02_correct.jpg Rotated 180°
-# Brief02_rotated70.jpg Rotated 180 ° bad Example stamp could not be found
-# Brief02_rotated160.jpg 340° bad  example
-# WhatsApp Image 2020-12-10 at 12.25.33(1).jpeg 180° other format
-# WhatsApp Image 2020-12-10 at 12.25.33(2).jpeg
-# WhatsApp Image 2020-12-10 at 12.25.33(3).jpeg
-# WhatsApp Image 2020-12-10 at 12.25.34(1).jpeg 320°
-# WhatsApp Image 2020-12-10 at 12.25.34(2).jpeg 180°
-# WhatsApp Image 2020-12-10 at 12.25.34(3).jpeg stamp not displayed
-
-#  Gray Rotation not working
-
-# Binarization of Addressfield not good
-# WhatsApp Image 2020-12-10 at 12.25.33.jpeg
-
-# Character Finding not Working
-# Brief_correct01.jpg
-# Brief_correct02.jpg
-# Character Found
-# Brief_rotated340.jpg
-# Brief_rotated150.jpg
-
-
+imagePath = "./Briefe/mo_1.jpg"
 # Kernel
 blurring = 0
 dilateErode = 1
@@ -69,9 +41,7 @@ characterEK = np.ones((characterDilateErode, characterDilateErode), "uint8")
 
 # C5/6 Scale  220x110
 C_5_6_Metrics = [220, 110]
-C_6_Metrics = [114, 162]
 C_5_6_Scale = [1.8, 2.4]
-C_6_Scale = [1.22, 1.62]
 stampZone = [74, 40]
 margin = 15
 stampMinSize = [28, 15]
@@ -86,7 +56,9 @@ stampMinSize = [28, 15]
 image = cv2.imread(imagePath, cv2.IMREAD_COLOR)
 if image is None:
     raise SystemExit("Imagepath is not right")
-heightImg, widthImg, channels = image.shape
+height, width, channels = image.shape
+height -= 1
+width -= 1
 showImage = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 # Zeigen des Bilds
 plt.imshow(showImage)
@@ -97,39 +69,284 @@ plt.title("Original")
 # https://www.geeksforgeeks.org/python-thresholding-techniques-using-opencv-set-3-otsu-thresholding/
 
 # %%
+# thresh1 = cv2.adaptiveThreshold(blurred,255,125,cv2.THRESH_BINARY,11,5)
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 plt.imshow(gray, cmap="gray", vmin=0, vmax=255)
 plt.title("Gray")
 
+
 # %%
-medianBlur = cv2.medianBlur(gray, 5)
-plt.imshow(medianBlur, cmap="gray")
-plt.title("medianblur")
+th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
+plt.imshow(binImg, cmap="gray")
+
+
+# %%
+erode = cv2.erode(binImg, erodeKernel, iterations=1)
+plt.imshow(erode, cmap="gray")
+plt.title("dilate")
+
+
+# %%
+dilate = cv2.dilate(erode, dilateKernel, iterations=1)
+plt.imshow(dilate, cmap="gray")
+plt.title("erode")
+
+
+# %%
+canny = cv2.Canny(dilate, 0, 30)
+height, width = canny.shape
+plt.imshow(canny, cmap="gray")
+plt.title("Canny")
+
+
+# %%
+def align_straight(cannyImg):
+    img, contours, hierachies = cv2.findContours(
+        cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    rotAngle = 0
+    for i, contour in enumerate(contours):
+        hNext, hPrev, hChild, hParent = hierachies[0][i]
+        minArea = cv2.minAreaRect(contour)
+        contWidth = minArea[1][0]
+        contHeight = minArea[1][1]
+        contAngle = minArea[2]
+        # print(contHeight, contWidth, contAngle)\n",
+
+        if (contWidth < contHeight):
+            height = contWidth
+            width = contHeight
+            rotAngle = 90
+        else:
+            height = contHeight
+            width = contWidth
+            rotAngle = 0
+
+        if(height == 0) or (width == 0):
+            scale = -1
+            fillFactor = -1
+        else:
+            scale = width/height
+            area_rect = height*width
+            letter_rect = cv2.contourArea(contour)
+            fillFactor = letter_rect/area_rect
+            # print(\"Contour: \",i, \" / scale: \",scale,\" / width: \",width, \" / height:\",height,\"/ Fill:\",fillFactor)
+        if(scale > C_5_6_Scale[0] and scale < C_5_6_Scale[1]) and (hChild != -1) and (hParent == -1) and (fillFactor > 0.95):
+            # print(\"ALL CRITERIA TRUE: Contour: \",i, \" / scale: \",scale,\" / width: \",width, \" / height:\",height,\"/ Fill:\",fillFactor)
+            rotAngle -= contAngle
+            return im.rotate_bound(cannyImg, rotAngle), rotAngle
+
+
+# %%
+plt.imshow(canny, cmap="gray")
+
+
+# %%
+[aligned_image, letterAngle] = align_straight(dilate)
+plt.imshow(aligned_image, cmap="gray")
+plt.title("straight-aligned")
+
+
+# %%
+img, contours, hierachy = cv2.findContours(
+    aligned_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+# Hierarchie [Previous, Next, Child, Parent]
+
+
+# %%
+def sizeSort(element):
+    return len(element)
+
+
+contours.sort(reverse=True, key=sizeSort)
+# Print the 5 biggest Contoursizes
+for index, contour in enumerate(contours):
+    if(index < 6):
+        print(contour.size)
 
 # %% [markdown]
-# Function for getting the classes for the Binarisation
-# Get the Border for the classes of the Grayscale image to seperate in Black in white class
+# ## Get the Moments
+# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
+
 # %%
-# https://www.geeksforgeeks.org/python-flatten-a-2d-numpy-array-into-1d-array/
+# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
 
 
-def getClassBorder(grayImage, area=[0, 255]):
-    flattenArray = grayImage.flatten()
-    filtered = pydash.filter_(
-        flattenArray, lambda x: x > area[0] and x < area[1])
-    amount, binEdges, _ = plt.hist(filtered, bins=9)
-    maxBeginEdge = binEdges[np.where(amount == amount.max())]
-    print("area: " + str(area))
-    print("amount of pixels: " + str(len(flattenArray)))
-    print("Begin of Edge of the max Grayscale Histogram: " + str(maxBeginEdge))
-    binEgde = int(maxBeginEdge - 2)
-    return binEgde
+def findLetter(img):
+    img, contours, hierachies = cv2.findContours(
+        img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    letter = {}
+    for i, contour in enumerate(contours):
+        hNext, hPrev, hChild, hParent = hierachies[0][i]
+        minArea = cv2.minAreaRect(contour)
+
+        rectWidth = minArea[1][0]
+        rectHeight = minArea[1][1]
+        if (rectHeight < rectWidth):
+            height = rectHeight
+            width = rectWidth
+        else:
+            height = rectWidth
+            width = rectHeight
+
+        if(height == 0 or width == 0):
+            scale = -1
+            fillFactor = -1
+        else:
+            scale = width/height
+            area_rect = height*width
+            letter_rect = cv2.contourArea(contour)
+            fillFactor = letter_rect/area_rect
+
+        if(scale > C_5_6_Scale[0] and scale < C_5_6_Scale[1]) and (hChild != -1) and (hParent == -1) and (fillFactor > 0.95):
+            # print(\"Contour: \",i, \" / scale: \",scale,\" / width: \",width, \" / height:\",height,\"/ Fill:\",fillFactor)
+            letter = {
+                "width": int(width),
+                "height": int(height),
+                "centerX": int(minArea[0][0]),
+                "centerY": int(minArea[0][1]),
+                "contour": contour
+            }
+            return letter
+
+
+# %%
+letterValue = findLetter(aligned_image)
+if letterValue is None:
+    raise SystemExit("letter not found")
+# Highlight the Contour of Find Letter and show center of Letter
+highlightedContour = aligned_image.copy()
+highlightedContour = cv2.circle(highlightedContour, (
+    letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 0, 255), thickness=-1)
+cv2.drawContours(highlightedContour,
+                 letterValue["contour"], -1, (0, 0, 255), 20)
+plt.imshow(highlightedContour)
 
 # %% [markdown]
-# ## relative Blurringkernel
-# Best Blurring Result with 5 px from Brief_rotated150.jpg
-# scale = height from Adressfield / best result with blur
-# 97  = 485 / 5
+# ## ROI of Letter
+
+# %%
+xStart = int(letterValue["centerX"]-letterValue["width"]/2)
+xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
+yStart = int(letterValue["centerY"]-letterValue["height"]/2)
+yEnd = int(letterValue["centerY"]+letterValue["height"]/2)
+letter = aligned_image[yStart:yEnd, xStart:xEnd]
+plt.imshow(letter, cmap="gray")
+
+
+# %%
+pixelPerMM = letterValue["width"]/C_5_6_Metrics[0]
+# StampZone [width, height] amount of Pixel
+stampZoneMetrics = [int(stampZone[0]*pixelPerMM), int(stampZone[1]*pixelPerMM)]
+# get the rigth Top StampZone
+rightTop = letter[0:stampZoneMetrics[1],
+                  letterValue["width"]-stampZoneMetrics[0]:letterValue["width"]]
+plt.imshow(rightTop, cmap="gray")
+
+# %% [markdown]
+# ### Check if stamp is there
+
+# %%
+
+
+def checkStamp(stampZone, pixelPerMM):
+    imgStamp, cStamp, hStamp = cv2.findContours(
+        stampZone, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    stamp_found = False
+    if (len(cStamp) != 0):  # No contour found
+        for index, contour in enumerate(cStamp):
+            # ( center (x,y), (width, height), angle of rotation ).
+            hNext, hPrev, hChild, hParent = hStamp[0][index]
+            approx = cv2.approxPolyDP(contour, 10, True)
+            minArea = cv2.minAreaRect(approx)
+            # print(minArea)
+            width = minArea[1][0]
+            height = minArea[1][1]
+            if (hChild != -1) and (hParent == -1):  # Extract Parent contour
+                # stamp minSize 22x28
+                contourWidth = width/pixelPerMM
+                contourHeigth = height/pixelPerMM
+                #print(contourHeigth, contourWidth)
+                if((contourWidth >= stampMinSize[0]) and (contourHeigth >= stampMinSize[1])):
+                    stamp_found = True
+                else:
+                    stamp_found = False
+    return stamp_found
+
+
+def align_correct(roiLetter, pixelPerMM):
+    height, width = roiLetter.shape
+    # StampZone [width, height] amount of Pixel
+    stampZoneMetrics = [int(stampZone[0]*pixelPerMM),
+                        int(stampZone[1]*pixelPerMM)]
+    # get the rigth Top StampZone
+    offset = 20
+    rightTop = roiLetter[0+offset:stampZoneMetrics[1] -
+                         offset, width-stampZoneMetrics[0]+offset:width-offset]
+    stamp_found = checkStamp(rightTop, pixelPerMM)
+    if stamp_found:
+        return roiLetter, 0, stamp_found
+    else:
+        return im.rotate_bound(roiLetter, 180), 180, stamp_found
+
+
+# %%
+def extractLetter(image):
+    # Preprocessing
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
+    erode = cv2.erode(binImg, erodeKernel, iterations=1)
+    dilate = cv2.dilate(erode, dilateKernel, iterations=1)
+    # Not needed! canny = cv2.Canny(dilate,0,30)
+
+    # Rotate image wide side down
+    aligned_image, letterAngle = align_straight(dilate)
+    height, width = aligned_image.shape[:2]
+
+    # Extract ROI of letter and calculate pixel Size
+    letterValue = findLetter(aligned_image)
+    if letterValue is None:
+        raise SystemExit("letter not found")
+    xStart = int(letterValue["centerX"]-letterValue["width"]/2)
+    xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
+    yStart = int(letterValue["centerY"]-letterValue["height"]/2)
+    yEnd = int(letterValue["centerY"]+letterValue["height"]/2)
+    letter = aligned_image[yStart:yEnd, xStart:xEnd]
+    pixelPerMM = letterValue["width"]/C_5_6_Metrics[0]
+
+    # Align images with stamp in the upper right corner
+    correct_aligned, turnAngle, found = align_correct(letter, pixelPerMM)
+
+    # Calculate turning angle and return extracted Letter
+    letterAngle = (letterAngle + turnAngle) % 360
+
+    if found:
+        extracted = im.rotate_bound(gray, letterAngle)[
+            yStart:yEnd, xStart:xEnd]
+    else:
+        extracted = im.rotate_bound(gray, letterAngle)[
+            height-yEnd:height-yStart, width-xEnd:width-xStart]
+
+    return extracted, letterAngle, pixelPerMM
+
+
+# %%
+letterGray, letterAngle, pixelPerMM = extractLetter(image)
+plt.imshow(letterGray, cmap="gray")
+
+# %% [markdown]
+# ## Get AddressField
+
+# %%
+height, width = letterGray.shape
+pixelMargin = margin*pixelPerMM
+startX = int(pixelMargin)
+endX = int(width-pixelMargin)
+startY = int(stampZone[1]*pixelPerMM)
+endY = int(height-pixelMargin)
+addressField = letterGray[startY:endY, startX:endX]
+[heightAF, widthAF] = addressField.shape
+plt.imshow(addressField, cmap="gray")
+plt.title("addressfield")
 
 
 # %%
@@ -142,244 +359,36 @@ def getBlurValue(height, blurScale):
     print("Value of the blur: " + str(scale))
     return scale
 
-# %%
-
-
-def sizeSort(element):
-    return len(element)
 
 # %%
-
-
-def showRotatedContour(img, contours, value):
-    height, width = img.shape
-    highlightedContour = np.zeros((height, width, 3))
-    for index, contour in enumerate(contours):
-        r = random.random()
-        g = random.random()
-        b = random.random()
-        cv2.drawContours(highlightedContour, contours, index, (r, g, b), 5)
-    cv2.drawContours(highlightedContour,
-                     value["contour"], -1, (255, 0, 0), 15)
-    highlightedContour = cv2.circle(highlightedContour, (
-        value["centerX"], value["centerY"]), radius=15, color=(255, 0, 0), thickness=-1)
-    plt.imshow(highlightedContour)
-
-# %%
-# th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
-
-# %%
-
-
-binImg = cv2.adaptiveThreshold(medianBlur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                               cv2.THRESH_BINARY_INV, 5, 5)
-plt.imshow(binImg, cmap="gray")
-plt.title("adaptive Threshold")
-
-# %%
-# blurred = cv2.blur(binImg, (1, 1), cv2.BORDER_ISOLATED)
-# plt.imshow(blurred, cmap="gray")
-kernel = np.ones((11, 11), np.uint8)
-dilate = cv2.dilate(binImg, kernel)
-erode = cv2.erode(dilate, kernel)
-plt.imshow(erode, cmap="gray")
-plt.title("erode and Dilate")
-canny = erode
-# %%
-# canny = cv2.Canny(erode, 20, 100)
-# plt.imshow(canny, cmap="gray")
-# plt.title("Canny")
-
-# %% [markdown]
-# ## Get the Moments
-# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
-
-
-# %%
-img, contours, hierachy = cv2.findContours(
-    canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-# Hierarchie [Previous, Next, Child, Parent]
-
-
-# %%
-# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
-
-
-def findLetter(contours):
-    contours.sort(reverse=True, key=sizeSort)
-    # Print the 5 biggest Contoursizes
-    for index, contour in enumerate(contours):
-        if(index < 6):
-            print(contour.size)
-    letter = {}
-    returnAngle = 0
-    for i, contour in enumerate(contours):
-        # ( center (x,y), (width, height), angle of rotation ).
-        minArea = cv2.minAreaRect(contour)
-        width = minArea[1][0]
-        height = minArea[1][1]
-        scale = width/height
-        if height > width:
-            scale = height/width
-        c_6 = scale > C_6_Scale[0] and scale < C_6_Scale[1]
-        c_5_6 = scale > C_5_6_Scale[0] and scale < C_5_6_Scale[1]
-        metric = C_5_6_Metrics[0]
-        print("Contour: " + str(i) + " / scale: " + str(scale) +
-              " / width: " + str(width) + " / height:" + str(height))
-        if c_6:
-            metric = C_6_Metrics[0]
-        # if(c_6 or c_5_6):
-        if(c_6 or c_5_6):
-            if(c_5_6):
-                if width < height:
-                    returnAngle = -minArea[2]+90
-                else:
-                    returnAngle = -minArea[2]
-            letter = {
-                "width": int(width),
-                "height": int(height),
-                "centerX": int(minArea[0][0]),
-                "centerY": int(minArea[0][1]),
-                "contour": contour,
-                "metric": metric,
-                "angle": returnAngle}
-            return letter
-
-
-# %%
-valueOriginal = findLetter(contours)
-if valueOriginal is None:
-    raise SystemExit("letter not found")
-# Highlight the Contour of Find Letter and show center of Letter
-showRotatedContour(canny, contours, valueOriginal)
-
-# %%
-rotated_Bin = im.rotate_bound(canny, valueOriginal["angle"])
-plt.imshow(rotated_Bin, cmap="gray")
-plt.title("Rotated Image")
-
-# %%
-rotated_Gray = im.rotate_bound(gray, valueOriginal["angle"])
-plt.imshow(rotated_Gray, cmap="gray")
-plt.title("Rotated Gray")
-
-# %% [markdown]
-# find the Contours of the rotated Image
-# %%
-rotImg, rotContours, rotHierachy = cv2.findContours(
-    rotated_Bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-valueRotated = findLetter(rotContours)
-showRotatedContour(rotated_Bin, rotContours, valueRotated)
-
-
-# %% [markdown]
-# ## ROI of Letter
-
-# %%
-xStart = int(valueRotated["centerX"]-valueRotated["width"]/2)
-xEnd = int(valueRotated["centerX"]+valueRotated["width"]/2)
-yStart = int(valueRotated["centerY"]-valueRotated["height"]/2)
-yEnd = int(valueRotated["centerY"]+valueRotated["height"]/2)
-letter = rotated_Bin[yStart:yEnd, xStart:xEnd]
-letterGray = rotated_Gray[yStart:yEnd, xStart:xEnd]
-plt.imshow(letter, cmap="gray")
-plt.title("ROI letter")
-
-# %%
-pixelPerMM = valueRotated["width"]/valueRotated["metric"]
-# StampZone [width, height] amount of Pixel
-stampZoneMetrics = [int(stampZone[0]*pixelPerMM), int(stampZone[1]*pixelPerMM)]
-# get the rigth Top StampZone
-rightTop = letter[0:stampZoneMetrics[1],
-                  valueRotated["width"]-stampZoneMetrics[0]:valueRotated["width"]]
-plt.imshow(rightTop, cmap="gray")
-plt.title("right Top")
-
-# %% [markdown]
-# ### Check if stamp is there
-
-# %%
-
-
-def checkStamp(stampZone, pixelPerMM):
-    stamp_found = False
-    imgStamp, cStamp, hStamp = cv2.findContours(
-        stampZone, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    if (len(cStamp) != 0):  # No contour found
-        for index, contour in enumerate(cStamp):
-            # ( center (x,y), (width, height), angle of rotation ).
-            hNext, hPrev, hChild, hParent = hStamp[0][index]
-            if (hChild != -1) and (hParent == -1):  # Extract Parent contour
-                # TBD: If there are some contours beside the stemp the first and/or second condition would be FALSE...
-                minArea = cv2.minAreaRect(contour)
-                width = minArea[1][0]
-                height = minArea[1][1]
-                # stamp minSize 22x28
-                contourWidth = width/pixelPerMM
-                contourHeigth = height/pixelPerMM
-                if((contourWidth >= stampMinSize[0]) and (contourHeigth >= stampMinSize[1])):
-                    stamp_found = True
-                else:
-                    stamp_found = False
-    return stamp_found
-
-
-def align_correct(roiLetter, pixelPerMM):
-    # StampZone [width, height] amount of Pixel
-    stampZoneMetrics = [int(stampZone[0]*pixelPerMM),
-                        int(stampZone[1]*pixelPerMM)]
-    # get the rigth Top StampZone
-    rightTop = roiLetter[0:stampZoneMetrics[1],
-                         valueRotated["width"]-stampZoneMetrics[0]:valueRotated["width"]]
-    stamp_found = checkStamp(rightTop, pixelPerMM)
-    if stamp_found:
-        return [roiLetter, 0]
-    else:
-        return [im.rotate_bound(roiLetter, 180), 180]
-
-
-# %%
-[correct_aligned, turnAngle] = align_correct(letter, pixelPerMM)
-plt.imshow(correct_aligned, cmap="gray")
-plt.title("correct-aligned")
-
-
-# %%
-correct_aligned_gray = im.rotate_bound(letterGray, turnAngle)
-plt.imshow(correct_aligned_gray, cmap="gray")
-
-
-# %% [markdown]
-# ## Get AddressField
-
-# %%
-height, width = correct_aligned_gray.shape
-pixelMargin = margin*pixelPerMM
-startX = int(pixelMargin)
-endX = int(width-pixelMargin)
-startY = int(stampZone[1]*pixelPerMM)
-endY = int(height-pixelMargin)
-addressField = correct_aligned_gray[startY:endY, startX:endX]
-[heightAF, widthAF] = addressField.shape
-plt.imshow(addressField, cmap="gray")
-plt.title("addressfield")
-
-# %%
-# addressField
 blurrValueAF = getBlurValue(heightAF, 97)
 blurrAFKernel = (blurrValueAF, blurrValueAF)
 blurrAF = cv2.blur(addressField, blurrAFKernel)
 plt.imshow(blurrAF, cmap="gray")
 
-# %% [markdown]
-# Function for getting the classes for the Binarisation
-# Get the Border for the classes of the Grayscale image to seperate in Black in white class
+
+# %%
+def getClassBorder(grayImage, area=[0, 255]):
+    flattenArray = grayImage.flatten()
+    filtered = pydash.filter_(
+        flattenArray, lambda x: x > area[0] and x < area[1])
+    amount, binEdges, _ = plt.hist(filtered, bins=9)
+    maxBeginEdge = binEdges[np.where(amount == amount.max())]
+    print("area: " + str(area))
+    print("amount of pixels: " + str(len(flattenArray)))
+    print("Begin of Edge of the max Grayscale Histogram: " + str(maxBeginEdge))
+    binEgde = int(maxBeginEdge - 2)
+    return binEgde
+
+
 # %%
 binEdge = getClassBorder(addressField, [50, 200])
+
 
 # %%
 th, binAF = cv2.threshold(blurrAF, binEdge, 255, cv2.THRESH_BINARY)
 plt.imshow(binAF, cmap="gray")
+
 
 # %%
 canny = cv2.Canny(binAF, 100, 200)
@@ -544,52 +553,6 @@ PLZ = lastRow[0:5]
 show_images(pydash.map_(PLZ, "img"))
 
 # %% [markdown]
-# ### Bekomme den Stream der Kamera und verwandle es in ein grau Stufen Bild
-# https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_video_display/py_video_display.html?highlight=video
-
-# %%
-# cap = cv2.VideoCapture(0)
-
-# while(True):
-#     # Capture frame-by-frame
-#     ret, frame = cap.read()
-
-#     # Our operations on the frame come here
-#     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-#     # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_canny/py_canny.html?highlight=imshow
-#     #canny Edge Detection
-#     edges = cv2.Canny(gray,100,200)
-#     # 1 Fenster mit Graustufe
-#     namedWindow1 = "gray"
-#     cv2.namedWindow(namedWindow1)
-#     cv2.moveWindow(namedWindow1,0,0)
-#     cv2.imshow(namedWindow1, gray)
-#     # 2 Fenster mit Kantenbild
-#     namedWindow2 = "edges"
-#     cv2.namedWindow(namedWindow2)
-#     cv2.moveWindow(namedWindow2,640,0)
-#     cv2.imshow(namedWindow2,edges)
-#     # 3 Fenster
-#     namedWindow3 = "weiteres"
-#     cv2.namedWindow(namedWindow3)
-#     cv2.moveWindow(namedWindow3,1280,0)
-#     cv2.imshow(namedWindow3,edges)
-
-
-#     if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
-
-# # When everything done, release the capture
-# cap.release()
-# cv2.destroyAllWindows()
-
-
-# %%
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-# %% [markdown]
 # # Neural Network
 
 # %%
@@ -726,7 +689,7 @@ class CrvModel:
         i = random.randint(0, data_imgs.shape[0])
         fig, ax = plt.subplots()
         ax.clear()
-        ax.imshow(data_imgs[i].T, cmap="gray")
+        ax.imshow(data_imgs[i], cmap="gray")
         title = "label = %d = %s" % (data_labels[i], classes[data_labels[i]])
         ax.set_title(title, fontsize=20)
         plt.show()
@@ -817,18 +780,18 @@ model.german_digits_network.compile(loss="categorical_crossentropy",
 
 
 # %%
+'''                                                                                              
 print("*******************************************************************")
 print("Train Emnist Model")
 print("*******************************************************************")
 
 model.emnist_trained = model.emnist_cnn.fit(model.emnist_train_img,
-                                            model.emnist_train_labels,
-                                            batch_size=model.batch_size,
-                                            epochs=model.epochs,
-                                            verbose=1,
-                                            validation_data=(
-                                                model.emnist_test_img, model.emnist_test_labels),
-                                            callbacks=[model.early_stopping_callback])
+              model.emnist_train_labels,
+              batch_size = model.batch_size,
+              epochs = model.epochs,
+              verbose = 1,
+              validation_data = (model.emnist_test_img, model.emnist_test_labels),
+              callbacks = [model.early_stopping_callback])
 
 model.emnist_cnn.save(model.emnist_save_path)
 
@@ -837,13 +800,12 @@ print("Train Emnist Letter Model")
 print("*******************************************************************")
 
 model.emnist_letter_trained = model.emnist_letter_cnn.fit(model.emnist_letter_train_img,
-                                                          model.emnist_letter_train_labels,
-                                                          batch_size=model.batch_size,
-                                                          epochs=model.epochs,
-                                                          verbose=1,
-                                                          validation_data=(
-                                                              model.emnist_letter_test_img, model.emnist_letter_test_labels),
-                                                          callbacks=[model.early_stopping_callback])
+              model.emnist_letter_train_labels,
+              batch_size = model.batch_size,
+              epochs = model.epochs,
+              verbose = 1,
+              validation_data = (model.emnist_letter_test_img, model.emnist_letter_test_labels),
+              callbacks = [model.early_stopping_callback])
 
 model.emnist_letter_cnn.save(model.emnist_letter_save_path)
 
@@ -853,13 +815,12 @@ print("Train Mnist Letter Model")
 print("*******************************************************************")
 
 model.mnist_trained = model.mnist_cnn.fit(model.mnist_train_img,
-                                          model.mnist_train_labels,
-                                          batch_size=model.batch_size,
-                                          epochs=model.epochs,
-                                          verbose=1,
-                                          validation_data=(
-                                              model.mnist_test_img, model.mnist_test_labels),
-                                          callbacks=[model.early_stopping_callback])
+                                    model.mnist_train_labels,
+                                    batch_size = model.batch_size,
+                                    epochs = model.epochs,
+                                    verbose = 1,
+                                    validation_data = (model.mnist_test_img, model.mnist_test_labels),
+                                    callbacks = [model.early_stopping_callback])
 
 model.mnist_cnn.save(model.mnist_save_path)
 
@@ -869,16 +830,22 @@ print("Train German Digits Model")
 print("*******************************************************************")
 
 model.german_digits_trained = model.german_digits_network.fit(model.german_digit_train_img,
-                                                              model.german_digit_train_labels,
-                                                              batch_size=model.batch_size,
-                                                              epochs=model.epochs,
-                                                              verbose=1,
-                                                              validation_data=(
-                                                                  model.german_digit_test_img, model.german_digit_test_labels),
-                                                              callbacks=[
-                                                                  model.german_digits_save_weights_callback]
-                                                              )
+                                    model.german_digit_train_labels,
+                                    batch_size = model.batch_size,
+                                    epochs = model.epochs,
+                                    verbose = 1,
+                                    validation_data = (model.german_digit_test_img, model.german_digit_test_labels),
+                                    callbacks = [model.german_digits_save_weights_callback]
+                                )
 
+model.german_digits_network.load_weights(model.german_digit_network_save_path)
+'''
+
+
+# %%
+model.emnist_cnn.load_weights(model.emnist_save_path)
+model.emnist_letter_cnn.load_weights(model.emnist_letter_save_path)
+model.mnist_cnn.load_weights(model.mnist_save_path)
 model.german_digits_network.load_weights(model.german_digit_network_save_path)
 
 
@@ -903,10 +870,11 @@ def visualize_result(model_name, model_history):
     plt.show()
 
 
-visualize_result("Emnist Full Network", model.emnist_trained.history)
-visualize_result("Emnist Letter Network", model.emnist_letter_trained.history)
-visualize_result("Mnist Network", model.mnist_trained.history)
-visualize_result("German Digits Network", model.german_digits_trained.history)
+# %%
+#visualize_result("Emnist Full Network", model.emnist_trained.history)
+#visualize_result("Emnist Letter Network", model.emnist_letter_trained.history)
+#visualize_result("Mnist Network", model.mnist_trained.history)
+#visualize_result("German Digits Network", model.german_digits_trained.history)
 
 
 # %%
@@ -927,6 +895,43 @@ print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %
       (mnist_results[0]*100, mnist_results[1]*100))
 print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %
       (german_digits_results[0]*100, german_digits_results[1]*100))
+
+
+# %%
+def preprocess_segmented_image(img):
+    img = ~img
+    img = img.astype("float32")/255
+    s = max(img.shape[0:2])
+    f = np.zeros((s, s))
+    ax, ay = (s - img.shape[1])//2, (s - img.shape[0])//2
+    f[ay:img.shape[0]+ay, ax:ax+img.shape[1]] = img
+    img = cv2.resize(img, (28, 28))
+    return img
+
+
+# %%
+PLZ_array = np.array(pydash.map_(PLZ, "img")[0])
+predictionArray = []
+for i, img in enumerate(pydash.map_(PLZ, "img")):
+    predictionArray.append(preprocess_segmented_image(img))
+
+array = np.array(predictionArray)
+array = np.expand_dims(array, axis=3)
+print(array.shape)
+
+
+# %%
+predictions = model.german_digits_network.predict(array)
+
+
+# %%
+for prediction in predictions:
+    print(np.argmax(prediction))
+
+
+# %%
+model.show_random_image(model.raw_german_digit_train_img,
+                        model.german_digits_classes, model.raw_german_digit_train_labels)
 
 # %% [markdown]
 # # Abgleich mit Datenbank

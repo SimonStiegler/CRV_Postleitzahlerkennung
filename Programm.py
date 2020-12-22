@@ -28,9 +28,8 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/Brief_rotated340.jpg"
+imagePath = "./Briefe/Brief_rotated150.jpg"
 # Rotation Letter not working
-# Brief_correct01.jpg Rotated 90°
 # Brief_correct02.jpg Rotatad 180°
 # Brief_rotated150.jpg Rotated 180°
 # Brief_rotated270.jpg Rotated 270°
@@ -46,12 +45,15 @@ imagePath = "./Briefe/Brief_rotated340.jpg"
 
 #  Gray Rotation not working
 
+# Binarization of Addressfield not good
+# WhatsApp Image 2020-12-10 at 12.25.33.jpeg
 
 # Character Finding not Working
-# WhatsApp Image 2020-12-10 at 12.25.33.jpeg
-# WhatsApp Image 2020-12-10 at 12.25.35(3).jpeg character to close to each other
+# Brief_correct01.jpg
+# Brief_correct02.jpg
 # Character Found
 # Brief_rotated340.jpg
+# Brief_rotated150.jpg
 
 
 # Kernel
@@ -115,7 +117,7 @@ def getClassBorder(grayImage, area=[0, 255]):
     flattenArray = grayImage.flatten()
     filtered = pydash.filter_(
         flattenArray, lambda x: x > area[0] and x < area[1])
-    amount, binEdges, _ = plt.hist(filtered, bins=10)
+    amount, binEdges, _ = plt.hist(filtered, bins=9)
     maxBeginEdge = binEdges[np.where(amount == amount.max())]
     print("area: " + str(area))
     print("amount of pixels: " + str(len(flattenArray)))
@@ -183,7 +185,6 @@ erode = cv2.erode(dilate, kernel)
 plt.imshow(erode, cmap="gray")
 plt.title("erode and Dilate")
 canny = erode
-
 # %%
 # canny = cv2.Canny(erode, 20, 100)
 # plt.imshow(canny, cmap="gray")
@@ -354,7 +355,6 @@ plt.imshow(correct_aligned_gray, cmap="gray")
 # %%
 height, width = correct_aligned_gray.shape
 pixelMargin = margin*pixelPerMM
-addressField = letter.copy()
 startX = int(pixelMargin)
 endX = int(width-pixelMargin)
 startY = int(stampZone[1]*pixelPerMM)
@@ -362,7 +362,7 @@ endY = int(height-pixelMargin)
 addressField = correct_aligned_gray[startY:endY, startX:endX]
 [heightAF, widthAF] = addressField.shape
 plt.imshow(addressField, cmap="gray")
-
+plt.title("addressfield")
 
 # %%
 # addressField
@@ -446,7 +446,7 @@ for index, contour in enumerate(contoursAF):
     width = rect[2]
     height = rect[3]
     # 0 because of the outer
-    if(width > 5 and height > 5 and width != widthAF):
+    if(width > 5 and height > 5 and width != widthAF and hierachyAF[0][index][3] == 0):
         img = binAF[y:y+height, x:x+width]
         character = {
             "img": img,

@@ -1,5 +1,3 @@
-# To add a new cell, type '# %%'
-# To add a new markdown cell, type '# %% [markdown]'
 # %% [markdown]
 # # Program für Roboter- und Computervision
 # %% [markdown]
@@ -29,14 +27,9 @@ from mlxtend.data import loadlocal_mnist
 # %%
 imagePath = "./Briefe/mo_2.jpg"
 # Kernel
-blurring = 0
 dilateErode = 1
 dilateKernel = np.ones((dilateErode, dilateErode), "uint8")
 erodeKernel = np.ones((dilateErode, dilateErode), "uint8")
-# CharacterKernel
-characterDilateErode = 5
-characterDK = np.ones((characterDilateErode, characterDilateErode), "uint8")
-characterEK = np.ones((characterDilateErode, characterDilateErode), "uint8")
 
 
 # C5/6 Scale  220x110
@@ -335,6 +328,7 @@ plt.imshow(letterGray, cmap="gray")
 
 # %% [markdown]
 # ## Get AddressField
+# Extract the Addressfield from the Gray Letter
 
 # %%
 height, width = letterGray.shape
@@ -348,8 +342,14 @@ addressField = letterGray[startY:endY, startX:endX]
 plt.imshow(addressField, cmap="gray")
 plt.title("addressfield")
 
-
+# %% [markdown]
+# ## relative Blurringkernel to Adressfieldheight
+# Best Blurring Result with 5 px from Brief_rotated150.jpg
+# scale = height from Adressfield / best result with blur
+# 97  = 485 / 5
 # %%
+
+
 def getBlurValue(height, blurScale):
     scale = int(height / blurScale)
     if scale % 2 == 0:
@@ -360,34 +360,26 @@ def getBlurValue(height, blurScale):
     return scale
 
 
+# %% [markdown]
+# ## Blurring
+# Remove the noise in the Adressfield
 # %%
 blurrValueAF = getBlurValue(heightAF, 97)
 blurrAFKernel = (blurrValueAF, blurrValueAF)
 blurrAF = cv2.medianBlur(addressField, blurrValueAF)
 plt.imshow(blurrAF, cmap="gray")
 
-
-# # %%
-# def getClassBorder(grayImage, area=[0, 255]):
-#     flattenArray = grayImage.flatten()
-#     filtered = pydash.filter_(
-#         flattenArray, lambda x: x > area[0] and x < area[1])
-#     amount, binEdges, _ = plt.hist(filtered, bins=9)
-#     maxBeginEdge = binEdges[np.where(amount == amount.max())]
-#     print("area: " + str(area))
-#     print("amount of pixels: " + str(len(flattenArray)))
-#     print("Begin of Edge of the max Grayscale Histogram: " + str(maxBeginEdge))
-#     binEgde = int(maxBeginEdge - 2)
-#     return binEgde
-
-
+# %% [markdown]
+# ## Adaptive Threshold
+# So the Contour for the Character are better against Lightning
 # %%
-# binEdge = getClassBorder(addressField, [50, 200])
 binAF = cv2.adaptiveThreshold(blurrAF, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                               cv2.THRESH_BINARY, 5, 5)
 plt.imshow(binAF, cmap="gray")
 plt.title("Binarisation")
 
+# %% [markdown]
+# ## Erode and Dilate to get a better Contour
 
 # %%
 erodeDilate = np.ones((blurrValueAF, blurrValueAF), np.uint8)
@@ -395,16 +387,9 @@ erode = cv2.erode(binAF, erodeDilate)
 dilate = cv2.dilate(erode, erodeDilate)
 plt.imshow(erode, cmap="gray")
 plt.title("erode/Dilate")
-# %%
-# th, binAF = cv2.threshold(blurrAF, binEdge, 255, cv2.THRESH_BINARY)
-# plt.imshow(binAF, cmap="gray")
 
-
-# %%
-# canny = cv2.Canny(binAF, 100, 200)
-# plt.imshow(canny, cmap="gray")
-
-
+# %% [markdown]
+# ## Shows all Contours in different Colors
 # %%
 imgAF, contoursAF, hierachyAF = cv2.findContours(
     dilate, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -420,7 +405,8 @@ plt.imshow(contourImg)
 # %% [markdown]
 # ## Display Function
 # https://gist.github.com/soply/f3eec2e79c165e39c9d540e916142ae1
-
+#
+# Display a list of images in a single figure with matplotlib.
 # %%
 
 
@@ -451,10 +437,10 @@ def show_images(images, cols=1, titles=None):
     fig.set_size_inches(np.array(fig.get_size_inches()) * n_images)
     plt.show()
 
+
 # %% [markdown]
 # ## Extract the Characters
-
-
+#
 # %%
 characters = []
 for index, contour in enumerate(contoursAF):
@@ -478,7 +464,6 @@ for index, contour in enumerate(contoursAF):
             "y": y
         }
         characters.append(character)
-        # plt.imshow(character,cmap="gray")
 if len(characters) == 0:
     raise SystemExit("No Character with needed size found")
 characterImg = pydash.map_(characters, "img")
@@ -487,30 +472,10 @@ if(len(characterImg) > 10):
 else:
     show_images(characterImg)
 
-# %%
-centerPoints = characters
-print(pydash.map_(characters, ["x"]))
-print(pydash.map_(characters, ["y"]))
-
-
-# %%
-mean_width = np.sum(pydash.map_(characters, "width"))/len(characters)
-mean_height = np.sum(pydash.map_(characters, "height"))/len(characters)
-
-
-def sortY(element):
-    return element["y"]
-
-
-centerPoints.sort(key=sortY)
-print(mean_width)
-print(mean_height)
-print(pydash.map_(characters, ["x"]))
-print(pydash.map_(characters, ["y"]))
-
 # %% [markdown]
 # ## Get the Rowedges
-
+# Make a Histogramm to get the Addressfield Rows
+# and get the BinEdges
 # %%
 # https://numpy.org/doc/stable/reference/generated/numpy.histogram.html
 amount, binEdges, _ = plt.hist(pydash.map_(characters, ["y"]), bins="auto")
@@ -518,14 +483,16 @@ rowEdges = []
 for i, yValue in enumerate(amount):
     if(yValue > 0):
         rowEdges.append([binEdges[i], binEdges[i+1]])
-
-
 print(rowEdges)
 print(amount)
-
 # %% [markdown]
-# ## Get the Rows
-
+# ## Sort the Character on the Y Value
+# %%
+def sortY(element):
+    return element["y"]
+characters.sort(key=sortY)
+# %% [markdown]
+# ## Get the Rows from the Adressfield
 # %%
 rows = []
 lastChar = characters[len(characters)-1]
@@ -560,7 +527,6 @@ for row in rows:
 # %% [markdown]
 # ## Get PLZ
 # From Last Row
-#
 # https://www.sekretaria.de/bueroorganisation/korrespondenz/din-5008/anschrift/
 
 # %%
@@ -946,7 +912,6 @@ for prediction in predictions:
     plz.append(np.argmax(prediction))
 
 print(plz)
-    
 
 
 # %%
@@ -957,6 +922,8 @@ model.show_random_image(model.raw_german_digit_train_img,
 # # Abgleich mit Datenbank
 
 # %%
+
+
 def get_town(plz):
     # Verbindung, Cursor
     connection = sqlite3.connect("orteDE.db")
@@ -985,7 +952,7 @@ def get_town(plz):
 # print(get_town(74246))
 # #Example for multiple PLZ
 # print(get_town(27367))
-print(get_town(int("".join(list(map(str,plz))))))
+print(get_town(int("".join(list(map(str, plz))))))
 
 
 # %%

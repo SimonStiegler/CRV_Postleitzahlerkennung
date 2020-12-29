@@ -62,37 +62,6 @@ plt.title("Original")
 # https://www.geeksforgeeks.org/python-thresholding-techniques-using-opencv-set-3-otsu-thresholding/
 
 # %%
-# thresh1 = cv2.adaptiveThreshold(blurred,255,125,cv2.THRESH_BINARY,11,5)
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-plt.imshow(gray, cmap="gray", vmin=0, vmax=255)
-plt.title("Gray")
-
-
-# %%
-th, binImg = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
-plt.imshow(binImg, cmap="gray")
-
-
-# %%
-erode = cv2.erode(binImg, erodeKernel, iterations=1)
-plt.imshow(erode, cmap="gray")
-plt.title("dilate")
-
-
-# %%
-dilate = cv2.dilate(erode, dilateKernel, iterations=1)
-plt.imshow(dilate, cmap="gray")
-plt.title("erode")
-
-
-# %%
-canny = cv2.Canny(dilate, 0, 30)
-height, width = canny.shape
-plt.imshow(canny, cmap="gray")
-plt.title("Canny")
-
-
-# %%
 def align_straight(cannyImg):
     img, contours, hierachies = cv2.findContours(
         cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -128,41 +97,18 @@ def align_straight(cannyImg):
             rotAngle -= contAngle
             return im.rotate_bound(cannyImg, rotAngle), rotAngle
 
-
 # %%
-plt.imshow(canny, cmap="gray")
+#def sizeSort(element):
+#    return len(element)
 
-
-# %%
-[aligned_image, letterAngle] = align_straight(dilate)
-plt.imshow(aligned_image, cmap="gray")
-plt.title("straight-aligned")
-
-
-# %%
-img, contours, hierachy = cv2.findContours(
-    aligned_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-# Hierarchie [Previous, Next, Child, Parent]
-
-
-# %%
-def sizeSort(element):
-    return len(element)
-
-
-contours.sort(reverse=True, key=sizeSort)
+#contours.sort(reverse=True, key=sizeSort)
 # Print the 5 biggest Contoursizes
-for index, contour in enumerate(contours):
-    if(index < 6):
-        print(contour.size)
-
-# %% [markdown]
-# ## Get the Moments
-# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
+#for index, contour in enumerate(contours):
+#    if(index < 6):
+#        print(contour.size)
 
 # %%
 # https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
-
 
 def findLetter(img):
     img, contours, hierachies = cv2.findContours(
@@ -201,46 +147,7 @@ def findLetter(img):
             }
             return letter
 
-
 # %%
-letterValue = findLetter(aligned_image)
-if letterValue is None:
-    raise SystemExit("letter not found")
-# Highlight the Contour of Find Letter and show center of Letter
-highlightedContour = aligned_image.copy()
-highlightedContour = cv2.circle(highlightedContour, (
-    letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 0, 255), thickness=-1)
-cv2.drawContours(highlightedContour,
-                 letterValue["contour"], -1, (0, 0, 255), 20)
-plt.imshow(highlightedContour)
-
-# %% [markdown]
-# ## ROI of Letter
-
-# %%
-xStart = int(letterValue["centerX"]-letterValue["width"]/2)
-xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
-yStart = int(letterValue["centerY"]-letterValue["height"]/2)
-yEnd = int(letterValue["centerY"]+letterValue["height"]/2)
-letter = aligned_image[yStart:yEnd, xStart:xEnd]
-plt.imshow(letter, cmap="gray")
-
-
-# %%
-pixelPerMM = letterValue["width"]/C_5_6_Metrics[0]
-# StampZone [width, height] amount of Pixel
-stampZoneMetrics = [int(stampZone[0]*pixelPerMM), int(stampZone[1]*pixelPerMM)]
-# get the rigth Top StampZone
-rightTop = letter[0:stampZoneMetrics[1],
-                  letterValue["width"]-stampZoneMetrics[0]:letterValue["width"]]
-plt.imshow(rightTop, cmap="gray")
-
-# %% [markdown]
-# ### Check if stamp is there
-
-# %%
-
-
 def checkStamp(stampZone, pixelPerMM):
     imgStamp, cStamp, hStamp = cv2.findContours(
         stampZone, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -299,6 +206,12 @@ def extractLetter(image):
     letterValue = findLetter(aligned_image)
     if letterValue is None:
         raise SystemExit("letter not found")
+
+    highlightedContour = aligned_image.copy()
+    highlightedContour = cv2.circle(highlightedContour, (letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 0, 255), thickness=-1)
+    cv2.drawContours(highlightedContour, letterValue["contour"], -1, (0, 0, 255), 20)
+    plt.imshow(highlightedContour)
+
     xStart = int(letterValue["centerX"]-letterValue["width"]/2)
     xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
     yStart = int(letterValue["centerY"]-letterValue["height"]/2)
@@ -348,7 +261,6 @@ plt.title("addressfield")
 # scale = height from Adressfield / best result with blur
 # 97  = 485 / 5
 # %%
-
 
 def getBlurValue(height, blurScale):
     scale = int(height / blurScale)

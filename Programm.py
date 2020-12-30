@@ -453,6 +453,9 @@ show_images(pydash.map_(PLZ, "img"))
 dataset_folder = os.path.abspath("./emnist_dataset")
 print(dataset_folder)
 
+train_models = false # Train Models from scratch and save weights if true
+                     # otherwise load weights if false
+
 
 # %%
 class CrvModel:
@@ -559,8 +562,7 @@ class CrvModel:
         self.german_digits_network = self.setup_network(
             self.num_german_digits_classes)
 
-    # Function Definitions
-
+    # Functions
     def load_german_digits(self, img_path, labels_path):
         train_img, train_labels = loadlocal_mnist(
             images_path=img_path,
@@ -596,25 +598,21 @@ class CrvModel:
 
     def setup_network(self, num_classes):
         model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.Conv2D(32, kernel_size=3,
-                                         activation='relu', input_shape=(28, 28, 1)))
+        model.add(tf.keras.layers.Conv2D(32, kernel_size=3, activation='relu', input_shape=(28, 28, 1)))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Conv2D(32, kernel_size=3, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
-        model.add(tf.keras.layers.Conv2D(32, kernel_size=5,
-                                         strides=2, padding='same', activation='relu'))
+        model.add(tf.keras.layers.Conv2D(32, kernel_size=5, strides=2, padding='same', activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Dropout(0.25))
         model.add(tf.keras.layers.Conv2D(64, kernel_size=3, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Conv2D(64, kernel_size=3, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
-        model.add(tf.keras.layers.Conv2D(64, kernel_size=5,
-                                         strides=2, padding='same', activation='relu'))
+        model.add(tf.keras.layers.Conv2D(64, kernel_size=5, strides=2, padding='same', activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Dropout(0.25))
-        model.add(tf.keras.layers.Conv2D(
-            128, kernel_size=4, activation='relu'))
+        model.add(tf.keras.layers.Conv2D(128, kernel_size=4, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Flatten())
         model.add(tf.keras.layers.Dropout(0.4))
@@ -623,22 +621,25 @@ class CrvModel:
 
 
 # %% [markdown]
-# ## Model initialisieren
+# ## Initialise Model Class and show example images of datasets
 
 # %%
 model = CrvModel(dataset_folder)
 
 
 # %%
-model.show_random_image(model.raw_emnist_train_img,
-                        model.emnist_classes, model.raw_emnist_train_labels)
-model.show_random_image(model.raw_mnist_train_img,
-                        model.mnist_classes, model.raw_mnist_train_labels)
-model.show_random_image(model.raw_emnist_letter_train_img,
-                        model.emnist_letter_classes, model.raw_emnist_letter_train_labels)
-model.show_random_image(model.raw_german_digit_train_img,
-                        model.german_digits_classes, model.raw_german_digit_train_labels)
+print(Example of Emnist Full Image)
+model.show_random_image(model.raw_emnist_train_img, model.emnist_classes, model.raw_emnist_train_labels)
+print(Example of Mnist Dataset Image)
+model.show_random_image(model.raw_mnist_train_img, model.mnist_classes, model.raw_mnist_train_labels)
+print(Example of Emnist Letter Dataset Image)
+model.show_random_image(model.raw_emnist_letter_train_img, model.emnist_letter_classes, model.raw_emnist_letter_train_labels)
+print(Example of German Digits Dataset Image)
+model.show_random_image(model.raw_german_digit_train_img, model.german_digits_classes, model.raw_german_digit_train_labels)
 
+
+# %% [markdown]
+# ## Show model architecture and compilation of model
 
 # %%
 print("-----------------------------------------------------------------------------")
@@ -672,77 +673,8 @@ model.german_digits_network.compile(loss="categorical_crossentropy",
                                     optimizer="adam",
                                     metrics=["accuracy"])
 
-
-# %%
-'''                                                                                              
-print("*******************************************************************")
-print("Train Emnist Model")
-print("*******************************************************************")
-
-model.emnist_trained = model.emnist_cnn.fit(model.emnist_train_img,
-              model.emnist_train_labels,
-              batch_size = model.batch_size,
-              epochs = model.epochs,
-              verbose = 1,
-              validation_data = (model.emnist_test_img, model.emnist_test_labels),
-              callbacks = [model.early_stopping_callback])
-
-model.emnist_cnn.save(model.emnist_save_path)
-
-print("*******************************************************************")
-print("Train Emnist Letter Model")
-print("*******************************************************************")
-
-model.emnist_letter_trained = model.emnist_letter_cnn.fit(model.emnist_letter_train_img,
-              model.emnist_letter_train_labels,
-              batch_size = model.batch_size,
-              epochs = model.epochs,
-              verbose = 1,
-              validation_data = (model.emnist_letter_test_img, model.emnist_letter_test_labels),
-              callbacks = [model.early_stopping_callback])
-
-model.emnist_letter_cnn.save(model.emnist_letter_save_path)
-
-
-print("*******************************************************************")
-print("Train Mnist Letter Model")
-print("*******************************************************************")
-
-model.mnist_trained = model.mnist_cnn.fit(model.mnist_train_img,
-                                    model.mnist_train_labels,
-                                    batch_size = model.batch_size,
-                                    epochs = model.epochs,
-                                    verbose = 1,
-                                    validation_data = (model.mnist_test_img, model.mnist_test_labels),
-                                    callbacks = [model.early_stopping_callback])
-
-model.mnist_cnn.save(model.mnist_save_path)
-
-
-print("*******************************************************************")
-print("Train German Digits Model")
-print("*******************************************************************")
-
-model.german_digits_trained = model.german_digits_network.fit(model.german_digit_train_img,
-                                    model.german_digit_train_labels,
-                                    batch_size = model.batch_size,
-                                    epochs = model.epochs,
-                                    verbose = 1,
-                                    validation_data = (model.german_digit_test_img, model.german_digit_test_labels),
-                                    callbacks = [model.german_digits_save_weights_callback]
-                                )
-
-model.german_digits_network.load_weights(model.german_digit_network_save_path)
-'''
-
-
-# %%
-model.emnist_cnn.load_weights(model.emnist_save_path)
-model.emnist_letter_cnn.load_weights(model.emnist_letter_save_path)
-model.mnist_cnn.load_weights(model.mnist_save_path)
-model.german_digits_network.load_weights(model.german_digit_network_save_path)
-
-
+# %% [markdown]
+# ## Training of model or loading of weights and visualization of results
 # %%
 def visualize_result(model_name, model_history):
     plt.figure()
@@ -765,33 +697,94 @@ def visualize_result(model_name, model_history):
 
 
 # %%
-#visualize_result("Emnist Full Network", model.emnist_trained.history)
-#visualize_result("Emnist Letter Network", model.emnist_letter_trained.history)
-#visualize_result("Mnist Network", model.mnist_trained.history)
-#visualize_result("German Digits Network", model.german_digits_trained.history)
+if train_models:
+    print("*******************************************************************")
+    print("Train Emnist Model")
+    print("*******************************************************************")
+
+    model.emnist_trained = model.emnist_cnn.fit(model.emnist_train_img,
+                model.emnist_train_labels,
+                batch_size = model.batch_size,
+                epochs = model.epochs,
+                verbose = 1,
+                validation_data = (model.emnist_test_img, model.emnist_test_labels),
+                callbacks = [model.early_stopping_callback])
+
+    model.emnist_cnn.save(model.emnist_save_path)
+
+    print("*******************************************************************")
+    print("Train Emnist Letter Model")
+    print("*******************************************************************")
+
+    model.emnist_letter_trained = model.emnist_letter_cnn.fit(model.emnist_letter_train_img,
+                model.emnist_letter_train_labels,
+                batch_size = model.batch_size,
+                epochs = model.epochs,
+                verbose = 1,
+                validation_data = (model.emnist_letter_test_img, model.emnist_letter_test_labels),
+                callbacks = [model.early_stopping_callback])
+
+    model.emnist_letter_cnn.save(model.emnist_letter_save_path)
+
+
+    print("*******************************************************************")
+    print("Train Mnist Letter Model")
+    print("*******************************************************************")
+
+    model.mnist_trained = model.mnist_cnn.fit(model.mnist_train_img,
+                                        model.mnist_train_labels,
+                                        batch_size = model.batch_size,
+                                        epochs = model.epochs,
+                                        verbose = 1,
+                                        validation_data = (model.mnist_test_img, model.mnist_test_labels),
+                                        callbacks = [model.early_stopping_callback])
+
+    model.mnist_cnn.save(model.mnist_save_path)
+
+
+    print("*******************************************************************")
+    print("Train German Digits Model")
+    print("*******************************************************************")
+
+    model.german_digits_trained = model.german_digits_network.fit(model.german_digit_train_img,
+                                        model.german_digit_train_labels,
+                                        batch_size = model.batch_size,
+                                        epochs = model.epochs,
+                                        verbose = 1,
+                                        validation_data = (model.german_digit_test_img, model.german_digit_test_labels),
+                                        callbacks = [model.german_digits_save_weights_callback]
+                                    )
+
+    model.german_digits_network.load_weights(model.german_digit_network_save_path)
+
+    visualize_result("Emnist Full Network", model.emnist_trained.history)
+    visualize_result("Emnist Letter Network", model.emnist_letter_trained.history)
+    visualize_result("Mnist Network", model.mnist_trained.history)
+    visualize_result("German Digits Network", model.german_digits_trained.history)
+else:
+    model.emnist_cnn.load_weights(model.emnist_save_path)
+    model.emnist_letter_cnn.load_weights(model.emnist_letter_save_path)
+    model.mnist_cnn.load_weights(model.mnist_save_path)
+    model.german_digits_network.load_weights(model.german_digit_network_save_path)
 
 
 # %%
-emnist_results = model.emnist_cnn.evaluate(
-    model.emnist_test_img, model.emnist_test_labels, verbose=0)
-emnist_letter_results = model.emnist_letter_cnn.evaluate(
-    model.emnist_letter_test_img, model.emnist_letter_test_labels, verbose=0)
-mnist_results = model.mnist_cnn.evaluate(
-    model.mnist_test_img, model.mnist_test_labels, verbose=0)
-german_digits_results = model.german_digits_network.evaluate(
-    model.german_digit_test_img, model.german_digit_test_labels, verbose=0)
+emnist_results = model.emnist_cnn.evaluate(model.emnist_test_img, model.emnist_test_labels, verbose=0)
+emnist_letter_results = model.emnist_letter_cnn.evaluate(model.emnist_letter_test_img, model.emnist_letter_test_labels, verbose=0)
+mnist_results = model.mnist_cnn.evaluate(model.mnist_test_img, model.mnist_test_labels, verbose=0)
+german_digits_results = model.german_digits_network.evaluate(model.german_digit_test_img, model.german_digit_test_labels, verbose=0)
 
-print('Emnist Loss: %.2f%%, Accuracy: %.2f%%' %
-      (emnist_results[0]*100, emnist_results[1]*100))
-print('Emnist Letter Loss: %.2f%%, Accuracy: %.2f%%' %
-      (emnist_letter_results[0]*100, emnist_letter_results[1]*100))
-print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %
-      (mnist_results[0]*100, mnist_results[1]*100))
-print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %
-      (german_digits_results[0]*100, german_digits_results[1]*100))
+print('Emnist Loss: %.2f%%, Accuracy: %.2f%%' %(emnist_results[0]*100, emnist_results[1]*100))
+print('Emnist Letter Loss: %.2f%%, Accuracy: %.2f%%' %(emnist_letter_results[0]*100, emnist_letter_results[1]*100))
+print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %(mnist_results[0]*100, mnist_results[1]*100))
+print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %(german_digits_results[0]*100, german_digits_results[1]*100))
 
+
+# %% [markdown]
+# ## Preprocessing of segmented digits and prediction of PLZ
 
 # %%
+# Bilder 
 def preprocess_segmented_image(img):
     img = ~img
     img = img.astype("float32")/255
@@ -811,24 +804,15 @@ for i, img in enumerate(pydash.map_(PLZ, "img")):
 
 array = np.array(predictionArray)
 array = np.expand_dims(array, axis=3)
-print(array.shape)
 
 
 # %%
 predictions = model.mnist_cnn.predict(array)
-
-
-# %%
 plz = []
 for prediction in predictions:
     plz.append(np.argmax(prediction))
 
 print(plz)
-
-
-# %%
-model.show_random_image(model.raw_german_digit_train_img,
-                        model.german_digits_classes, model.raw_german_digit_train_labels)
 
 # %% [markdown]
 # # Abgleich mit Datenbank

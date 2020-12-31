@@ -25,7 +25,8 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./Briefe/mo_2.jpg"
+imagePath = "./briefe_abgabe/Simon_schlecht_phone_nein_3.jpg"
+# imagePath = "./Briefe/mo_2.jpg"
 # Kernel
 dilateErode = 1
 dilateKernel = np.ones((dilateErode, dilateErode), "uint8")
@@ -62,6 +63,8 @@ plt.title("Original")
 # https://www.geeksforgeeks.org/python-thresholding-techniques-using-opencv-set-3-otsu-thresholding/
 
 # %%
+
+
 def align_straight(cannyImg):
     img, contours, hierachies = cv2.findContours(
         cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -98,17 +101,18 @@ def align_straight(cannyImg):
             return im.rotate_bound(cannyImg, rotAngle), rotAngle
 
 # %%
-#def sizeSort(element):
+# def sizeSort(element):
 #    return len(element)
 
 #contours.sort(reverse=True, key=sizeSort)
 # Print the 5 biggest Contoursizes
-#for index, contour in enumerate(contours):
+# for index, contour in enumerate(contours):
 #    if(index < 6):
 #        print(contour.size)
 
 # %%
 # https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
+
 
 def findLetter(img):
     img, contours, hierachies = cv2.findContours(
@@ -148,6 +152,8 @@ def findLetter(img):
             return letter
 
 # %%
+
+
 def checkStamp(stampZone, pixelPerMM):
     imgStamp, cStamp, hStamp = cv2.findContours(
         stampZone, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -208,8 +214,10 @@ def extractLetter(image):
         raise SystemExit("letter not found")
 
     highlightedContour = aligned_image.copy()
-    highlightedContour = cv2.circle(highlightedContour, (letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 0, 255), thickness=-1)
-    cv2.drawContours(highlightedContour, letterValue["contour"], -1, (0, 0, 255), 20)
+    highlightedContour = cv2.circle(highlightedContour, (
+        letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 0, 255), thickness=-1)
+    cv2.drawContours(highlightedContour,
+                     letterValue["contour"], -1, (0, 0, 255), 20)
     plt.imshow(highlightedContour)
 
     xStart = int(letterValue["centerX"]-letterValue["width"]/2)
@@ -261,6 +269,7 @@ plt.title("addressfield")
 # scale = height from Adressfield / best result with blur
 # 97  = 485 / 5
 # %%
+
 
 def getBlurValue(height, blurScale):
     scale = int(height / blurScale)
@@ -400,26 +409,29 @@ print(amount)
 # %% [markdown]
 # ## Sort the Character on the Y Value
 # %%
+
+
 def sortY(element):
     return element["y"]
+
+
 characters.sort(key=sortY)
 # %% [markdown]
 # ## Get the Rows from the Adressfield
 # %%
 rows = []
-lastChar = characters[len(characters)-1]
 for edge in rowEdges:
     rowElements = []
     for index, character in enumerate(characters):
         if(edge[0] <= character["y"]):
             if(edge[1] >= character["y"]):
                 rowElements.append(character)
-                # for last Edge that the rowElements are added
-                if(lastChar == character):
-                    rows.append(rowElements)
             else:
                 rows.append(rowElements)
                 break
+    # last rows append
+    if edge == rowEdges[-1]:
+        rows.append(rowElements)
 print(len(rows))
 
 # %% [markdown]
@@ -453,8 +465,8 @@ show_images(pydash.map_(PLZ, "img"))
 dataset_folder = os.path.abspath("./emnist_dataset")
 print(dataset_folder)
 
-train_models = False # Train Models from scratch and save weights if true
-                     # otherwise load weights if false
+train_models = False  # Train Models from scratch and save weights if true
+# otherwise load weights if false
 
 
 # %%
@@ -598,21 +610,25 @@ class CrvModel:
 
     def setup_network(self, num_classes):
         model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.Conv2D(32, kernel_size=3, activation='relu', input_shape=(28, 28, 1)))
+        model.add(tf.keras.layers.Conv2D(32, kernel_size=3,
+                                         activation='relu', input_shape=(28, 28, 1)))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Conv2D(32, kernel_size=3, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
-        model.add(tf.keras.layers.Conv2D(32, kernel_size=5, strides=2, padding='same', activation='relu'))
+        model.add(tf.keras.layers.Conv2D(32, kernel_size=5,
+                                         strides=2, padding='same', activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Dropout(0.25))
         model.add(tf.keras.layers.Conv2D(64, kernel_size=3, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Conv2D(64, kernel_size=3, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
-        model.add(tf.keras.layers.Conv2D(64, kernel_size=5, strides=2, padding='same', activation='relu'))
+        model.add(tf.keras.layers.Conv2D(64, kernel_size=5,
+                                         strides=2, padding='same', activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Dropout(0.25))
-        model.add(tf.keras.layers.Conv2D(128, kernel_size=4, activation='relu'))
+        model.add(tf.keras.layers.Conv2D(
+            128, kernel_size=4, activation='relu'))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Flatten())
         model.add(tf.keras.layers.Dropout(0.4))
@@ -629,13 +645,17 @@ model = CrvModel(dataset_folder)
 
 # %%
 print("Example of Emnist Full Image")
-model.show_random_image(model.raw_emnist_train_img, model.emnist_classes, model.raw_emnist_train_labels)
+model.show_random_image(model.raw_emnist_train_img,
+                        model.emnist_classes, model.raw_emnist_train_labels)
 print("Example of Mnist Dataset Image")
-model.show_random_image(model.raw_mnist_train_img, model.mnist_classes, model.raw_mnist_train_labels)
+model.show_random_image(model.raw_mnist_train_img,
+                        model.mnist_classes, model.raw_mnist_train_labels)
 print("Example of Emnist Letter Dataset Image")
-model.show_random_image(model.raw_emnist_letter_train_img, model.emnist_letter_classes, model.raw_emnist_letter_train_labels)
+model.show_random_image(model.raw_emnist_letter_train_img,
+                        model.emnist_letter_classes, model.raw_emnist_letter_train_labels)
 print("Example of German Digits Dataset Image")
-model.show_random_image(model.raw_german_digit_train_img, model.german_digits_classes, model.raw_german_digit_train_labels)
+model.show_random_image(model.raw_german_digit_train_img,
+                        model.german_digits_classes, model.raw_german_digit_train_labels)
 
 
 # %% [markdown]
@@ -676,6 +696,8 @@ model.german_digits_network.compile(loss="categorical_crossentropy",
 # %% [markdown]
 # ## Training of model or loading of weights and visualization of results
 # %%
+
+
 def visualize_result(model_name, model_history):
     plt.figure()
     plt.suptitle(model_name, fontsize=16)
@@ -703,12 +725,13 @@ if train_models:
     print("*******************************************************************")
 
     model.emnist_trained = model.emnist_cnn.fit(model.emnist_train_img,
-                model.emnist_train_labels,
-                batch_size = model.batch_size,
-                epochs = model.epochs,
-                verbose = 1,
-                validation_data = (model.emnist_test_img, model.emnist_test_labels),
-                callbacks = [model.early_stopping_callback])
+                                                model.emnist_train_labels,
+                                                batch_size=model.batch_size,
+                                                epochs=model.epochs,
+                                                verbose=1,
+                                                validation_data=(
+                                                    model.emnist_test_img, model.emnist_test_labels),
+                                                callbacks=[model.early_stopping_callback])
 
     model.emnist_cnn.save(model.emnist_save_path)
 
@@ -717,74 +740,88 @@ if train_models:
     print("*******************************************************************")
 
     model.emnist_letter_trained = model.emnist_letter_cnn.fit(model.emnist_letter_train_img,
-                model.emnist_letter_train_labels,
-                batch_size = model.batch_size,
-                epochs = model.epochs,
-                verbose = 1,
-                validation_data = (model.emnist_letter_test_img, model.emnist_letter_test_labels),
-                callbacks = [model.early_stopping_callback])
+                                                              model.emnist_letter_train_labels,
+                                                              batch_size=model.batch_size,
+                                                              epochs=model.epochs,
+                                                              verbose=1,
+                                                              validation_data=(
+                                                                  model.emnist_letter_test_img, model.emnist_letter_test_labels),
+                                                              callbacks=[model.early_stopping_callback])
 
     model.emnist_letter_cnn.save(model.emnist_letter_save_path)
-
 
     print("*******************************************************************")
     print("Train Mnist Letter Model")
     print("*******************************************************************")
 
     model.mnist_trained = model.mnist_cnn.fit(model.mnist_train_img,
-                                        model.mnist_train_labels,
-                                        batch_size = model.batch_size,
-                                        epochs = model.epochs,
-                                        verbose = 1,
-                                        validation_data = (model.mnist_test_img, model.mnist_test_labels),
-                                        callbacks = [model.early_stopping_callback])
+                                              model.mnist_train_labels,
+                                              batch_size=model.batch_size,
+                                              epochs=model.epochs,
+                                              verbose=1,
+                                              validation_data=(
+                                                  model.mnist_test_img, model.mnist_test_labels),
+                                              callbacks=[model.early_stopping_callback])
 
     model.mnist_cnn.save(model.mnist_save_path)
-
 
     print("*******************************************************************")
     print("Train German Digits Model")
     print("*******************************************************************")
 
     model.german_digits_trained = model.german_digits_network.fit(model.german_digit_train_img,
-                                        model.german_digit_train_labels,
-                                        batch_size = model.batch_size,
-                                        epochs = model.epochs,
-                                        verbose = 1,
-                                        validation_data = (model.german_digit_test_img, model.german_digit_test_labels),
-                                        callbacks = [model.german_digits_save_weights_callback]
-                                    )
+                                                                  model.german_digit_train_labels,
+                                                                  batch_size=model.batch_size,
+                                                                  epochs=model.epochs,
+                                                                  verbose=1,
+                                                                  validation_data=(
+                                                                      model.german_digit_test_img, model.german_digit_test_labels),
+                                                                  callbacks=[
+                                                                      model.german_digits_save_weights_callback]
+                                                                  )
 
-    model.german_digits_network.load_weights(model.german_digit_network_save_path)
+    model.german_digits_network.load_weights(
+        model.german_digit_network_save_path)
 
     visualize_result("Emnist Full Network", model.emnist_trained.history)
-    visualize_result("Emnist Letter Network", model.emnist_letter_trained.history)
+    visualize_result("Emnist Letter Network",
+                     model.emnist_letter_trained.history)
     visualize_result("Mnist Network", model.mnist_trained.history)
-    visualize_result("German Digits Network", model.german_digits_trained.history)
+    visualize_result("German Digits Network",
+                     model.german_digits_trained.history)
 else:
     model.emnist_cnn.load_weights(model.emnist_save_path)
     model.emnist_letter_cnn.load_weights(model.emnist_letter_save_path)
     model.mnist_cnn.load_weights(model.mnist_save_path)
-    model.german_digits_network.load_weights(model.german_digit_network_save_path)
+    model.german_digits_network.load_weights(
+        model.german_digit_network_save_path)
 
 
 # %%
-emnist_results = model.emnist_cnn.evaluate(model.emnist_test_img, model.emnist_test_labels, verbose=0)
-emnist_letter_results = model.emnist_letter_cnn.evaluate(model.emnist_letter_test_img, model.emnist_letter_test_labels, verbose=0)
-mnist_results = model.mnist_cnn.evaluate(model.mnist_test_img, model.mnist_test_labels, verbose=0)
-german_digits_results = model.german_digits_network.evaluate(model.german_digit_test_img, model.german_digit_test_labels, verbose=0)
+emnist_results = model.emnist_cnn.evaluate(
+    model.emnist_test_img, model.emnist_test_labels, verbose=0)
+emnist_letter_results = model.emnist_letter_cnn.evaluate(
+    model.emnist_letter_test_img, model.emnist_letter_test_labels, verbose=0)
+mnist_results = model.mnist_cnn.evaluate(
+    model.mnist_test_img, model.mnist_test_labels, verbose=0)
+german_digits_results = model.german_digits_network.evaluate(
+    model.german_digit_test_img, model.german_digit_test_labels, verbose=0)
 
-print('Emnist Loss: %.2f%%, Accuracy: %.2f%%' %(emnist_results[0]*100, emnist_results[1]*100))
-print('Emnist Letter Loss: %.2f%%, Accuracy: %.2f%%' %(emnist_letter_results[0]*100, emnist_letter_results[1]*100))
-print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %(mnist_results[0]*100, mnist_results[1]*100))
-print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %(german_digits_results[0]*100, german_digits_results[1]*100))
+print('Emnist Loss: %.2f%%, Accuracy: %.2f%%' %
+      (emnist_results[0]*100, emnist_results[1]*100))
+print('Emnist Letter Loss: %.2f%%, Accuracy: %.2f%%' %
+      (emnist_letter_results[0]*100, emnist_letter_results[1]*100))
+print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %
+      (mnist_results[0]*100, mnist_results[1]*100))
+print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %
+      (german_digits_results[0]*100, german_digits_results[1]*100))
 
 
 # %% [markdown]
 # ## Preprocessing of segmented digits and prediction of PLZ
 
 # %%
-# Bilder 
+# Bilder
 def preprocess_segmented_image(img):
     img = ~img
     img = img.astype("float32")/255

@@ -25,7 +25,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./briefe_abgabe/Eric_mittel_handy_nein_1.jpg"
+imagePath = "./briefe_abgabe/Eric_gut_handy_nein_3.jpg"
 # imagePath = "./Briefe/mo_2.jpg"
 # Kernel
 dilateErode = 1
@@ -59,13 +59,7 @@ showImage = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 plt.imshow(showImage)
 plt.title("Original")
 
-# %% [markdown]
-# ## Binarisierung
-# https://www.geeksforgeeks.org/python-thresholding-techniques-using-opencv-set-3-otsu-thresholding/
-
 # %%
-
-
 def align_straight(cannyImg):
     img, contours, hierachies = cv2.findContours(
         cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -100,20 +94,6 @@ def align_straight(cannyImg):
             # print(\"ALL CRITERIA TRUE: Contour: \",i, \" / scale: \",scale,\" / width: \",width, \" / height:\",height,\"/ Fill:\",fillFactor)
             rotAngle -= contAngle
             return im.rotate_bound(cannyImg, rotAngle), rotAngle
-
-# %%
-# def sizeSort(element):
-#    return len(element)
-
-#contours.sort(reverse=True, key=sizeSort)
-# Print the 5 biggest Contoursizes
-# for index, contour in enumerate(contours):
-#    if(index < 6):
-#        print(contour.size)
-
-# %%
-# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
-
 
 def findLetter(img):
     img, contours, hierachies = cv2.findContours(
@@ -152,9 +132,6 @@ def findLetter(img):
             }
             return letter
 
-# %%
-
-
 def checkStamp(stampZone, pixelPerMM):
     imgStamp, cStamp, hStamp = cv2.findContours(
         stampZone, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -179,7 +156,6 @@ def checkStamp(stampZone, pixelPerMM):
                     stamp_found = False
     return stamp_found
 
-
 def align_correct(roiLetter, pixelPerMM):
     height, width = roiLetter.shape
     # StampZone [width, height] amount of Pixel
@@ -191,12 +167,12 @@ def align_correct(roiLetter, pixelPerMM):
                          offset, width-stampZoneMetrics[0]+offset:width-offset]
     stamp_found = checkStamp(rightTop, pixelPerMM)
     if stamp_found:
-        return roiLetter, 0, stamp_found
+        #rightTop just for debug resonse
+        return roiLetter, 0, stamp_found, rightTop
     else:
-        return im.rotate_bound(roiLetter, 180), 180, stamp_found
+        #rightTop just for debug resonse
+        return im.rotate_bound(roiLetter, 180), 180, stamp_found, rightTop
 
-
-# %%
 def extractLetter(image):
     # Preprocessing
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -216,10 +192,10 @@ def extractLetter(image):
 
     highlightedContour = aligned_image.copy()
     highlightedContour = cv2.circle(highlightedContour, (
-        letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 0, 255), thickness=-1)
+        letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 255, 255), thickness=20)
     cv2.drawContours(highlightedContour,
-                     letterValue["contour"], -1, (0, 0, 255), 20)
-    plt.imshow(highlightedContour)
+                     letterValue["contour"], -1, color=(0, 255, 255), thickness=20)
+    #plt.imshow(highlightedContour)
 
     xStart = int(letterValue["centerX"]-letterValue["width"]/2)
     xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
@@ -229,7 +205,7 @@ def extractLetter(image):
     pixelPerMM = letterValue["width"]/C_5_6_Metrics[0]
 
     # Align images with stamp in the upper right corner
-    correct_aligned, turnAngle, found = align_correct(letter, pixelPerMM)
+    correct_aligned, turnAngle, found, rightTop = align_correct(letter, pixelPerMM)
 
     # Calculate turning angle and return extracted Letter
     letterAngle = (letterAngle + turnAngle) % 360
@@ -240,13 +216,73 @@ def extractLetter(image):
     else:
         extracted = im.rotate_bound(gray, letterAngle)[
             height-yEnd:height-yStart, width-xEnd:width-xStart]
+    
+    # debugPictures just for debug resonse (images can not ploted in functions)
+    debugPictures = [gray, binImg, erode, dilate, aligned_image, highlightedContour, letter, rightTop, correct_aligned]
 
-    return extracted, letterAngle, pixelPerMM
+    return extracted, letterAngle, pixelPerMM, debugPictures
 
 
 # %%
-letterGray, letterAngle, pixelPerMM = extractLetter(image)
-plt.imshow(letterGray, cmap="gray")
+letterGray, letterAngle, pixelPerMM, debugPictures = extractLetter(image)
+
+# %% [markdown]
+# # Briefextraction
+# ## Vorverarbeitung
+# https://www.geeksforgeeks.org/python-thresholding-techniques-using-opencv-set-3-otsu-thresholding/
+
+
+# %%
+plt.imshow(debugPictures[0], cmap="gray")
+plt.title("gray")
+
+# %%
+plt.imshow(debugPictures[1], cmap="gray")
+plt.title("binary")
+
+# %%
+plt.imshow(debugPictures[2], cmap="gray")
+plt.title("erode")
+
+# %%
+plt.imshow(debugPictures[3], cmap="gray")
+plt.title("dilate")
+
+# %% [markdown]
+# ## align_straight()
+# Ausrichten des Briefes, sodass die lange Seite waagerecht ist.
+# https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
+
+# %%
+plt.imshow(debugPictures[4], cmap="gray")
+plt.title("aligned image")
+
+# %% [markdown]
+# ## find_letter()
+# Extraxtion der Birefkontour
+# https://docs.opencv.org/3.1.0/dd/d49/tutorial_py_contour_features.html
+
+# %%
+plt.imshow(debugPictures[5], cmap="brg")
+plt.title("highlighted contour")
+
+# %%
+plt.imshow(debugPictures[6], cmap="gray")
+plt.title("letter")
+
+# %% [markdown]
+# ## align_correct()
+# Ausrichten des Briefes, sodass die Briefmarke sich oben rechts befindet. 
+# Hierfür wird überprüft ob sich in der oberen rechten Ecke eine Kontour der Briefmarke finden lässt.
+# Falls ja ist der Brief bereits korrekt ausgerichtet, falss nein ist er um 180° gedreht.
+
+# %%
+plt.imshow(debugPictures[7], cmap="gray")
+plt.title("right top")
+# %%
+plt.imshow(debugPictures[8], cmap="gray")
+plt.title("correct aligend")
+
 
 # %% [markdown]
 # ## Get AddressField

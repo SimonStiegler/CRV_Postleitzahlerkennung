@@ -25,7 +25,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./briefe_abgabe/Eric_gut_handy_nein_1.jpg"
+imagePath = "./briefe_abgabe/Eric_mittel_handy_nein_1.jpg"
 # imagePath = "./Briefe/mo_2.jpg"
 # Kernel
 dilateErode = 1
@@ -286,7 +286,7 @@ def getBlurValue(height, blurScale):
 # ## Blurring
 # Remove the noise in the Adressfield
 # %%
-blurrValueAF = getBlurValue(heightAF, 97)
+blurrValueAF = getBlurValue(heightAF, 139)
 blurrAFKernel = (blurrValueAF, blurrValueAF)
 blurrAF = cv2.medianBlur(addressField, blurrValueAF)
 plt.imshow(blurrAF, cmap="gray")

@@ -25,7 +25,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./briefe_abgabe/test.JPG"
+imagePath = "./briefe_abgabe/Eric_gut_handy_nein_1.jpg"
 # imagePath = "./Briefe/mo_2.jpg"
 # Kernel
 dilateErode = 1
@@ -38,6 +38,7 @@ C_5_6_Metrics = [220, 110]
 C_5_6_Scale = [1.8, 2.4]
 stampZone = [74, 40]
 margin = 15
+bottomMargin = 3
 stampMinSize = [28, 15]
 
 # %% [markdown]
@@ -255,7 +256,7 @@ plt.imshow(letterGray, cmap="gray")
 height, width = letterGray.shape
 pixelMargin = margin*pixelPerMM
 startX = int(pixelMargin)
-endX = int(width-pixelMargin)
+endX = int(width-(pixelPerMM*bottomMargin))
 startY = int(stampZone[1]*pixelPerMM)
 endY = int(height-pixelMargin)
 addressField = letterGray[startY:endY, startX:endX]
@@ -466,7 +467,7 @@ dataset_folder = os.path.abspath("./emnist_dataset")
 print(dataset_folder)
 
 train_models = False  # Train Models from scratch and save weights if true
-                      # otherwise load weights if false
+# otherwise load weights if false
 
 
 # %%

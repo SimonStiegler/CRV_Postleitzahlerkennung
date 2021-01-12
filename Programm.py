@@ -25,7 +25,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./briefe_abgabe/moritz_gut_dslr_ja_1.JPG"
+imagePath = "./briefe_abgabe/moritz_schlecht_dslr_ja_3.JPG"
 # imagePath = "./Briefe/mo_2.jpg"
 # Kernel
 dilateErode = 1

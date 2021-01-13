@@ -25,8 +25,9 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./briefe_abgabe/moritz_schlecht_dslr_ja_3.JPG"
+imagePath = "./briefe_abgabe/moritz_mittel_dslr_ja_3.JPG"
 # imagePath = "./Briefe/mo_2.jpg"
+testingFolderPath = "./testing"
 # Kernel
 dilateErode = 1
 dilateKernel = np.ones((dilateErode, dilateErode), "uint8")
@@ -40,6 +41,16 @@ stampZone = [74, 40]
 margin = 15
 bottomMargin = 3
 stampMinSize = [28, 15]
+# # %%
+# # Create Folder for Testing
+# index = imagePath.rfind("/")
+# lastIndex = imagePath.rfind(".")
+# imageName = imagePath[index:lastIndex]
+
+
+# testingFolder = testingFolderPath + imageName
+# print(testingFolder)
+# os.makedirs(testingFolder, exist_ok=True)
 
 # %% [markdown]
 # ## Vorbereitung des Bildes
@@ -60,6 +71,8 @@ plt.imshow(showImage)
 plt.title("Original")
 
 # %%
+
+
 def align_straight(cannyImg):
     img, contours, hierachies = cv2.findContours(
         cannyImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -94,6 +107,7 @@ def align_straight(cannyImg):
             # print(\"ALL CRITERIA TRUE: Contour: \",i, \" / scale: \",scale,\" / width: \",width, \" / height:\",height,\"/ Fill:\",fillFactor)
             rotAngle -= contAngle
             return im.rotate_bound(cannyImg, rotAngle), rotAngle
+
 
 def findLetter(img):
     img, contours, hierachies = cv2.findContours(
@@ -132,6 +146,7 @@ def findLetter(img):
             }
             return letter
 
+
 def checkStamp(stampZone, pixelPerMM):
     imgStamp, cStamp, hStamp = cv2.findContours(
         stampZone, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -156,6 +171,7 @@ def checkStamp(stampZone, pixelPerMM):
                     stamp_found = False
     return stamp_found
 
+
 def align_correct(roiLetter, pixelPerMM):
     height, width = roiLetter.shape
     # StampZone [width, height] amount of Pixel
@@ -167,11 +183,12 @@ def align_correct(roiLetter, pixelPerMM):
                          offset, width-stampZoneMetrics[0]+offset:width-offset]
     stamp_found = checkStamp(rightTop, pixelPerMM)
     if stamp_found:
-        #rightTop just for debug resonse
+        # rightTop just for debug resonse
         return roiLetter, 0, stamp_found, rightTop
     else:
-        #rightTop just for debug resonse
+        # rightTop just for debug resonse
         return im.rotate_bound(roiLetter, 180), 180, stamp_found, rightTop
+
 
 def extractLetter(image):
     # Preprocessing
@@ -195,7 +212,7 @@ def extractLetter(image):
         letterValue["centerX"], letterValue["centerY"]), radius=30, color=(0, 255, 255), thickness=20)
     cv2.drawContours(highlightedContour,
                      letterValue["contour"], -1, color=(0, 255, 255), thickness=20)
-    #plt.imshow(highlightedContour)
+    # plt.imshow(highlightedContour)
 
     xStart = int(letterValue["centerX"]-letterValue["width"]/2)
     xEnd = int(letterValue["centerX"]+letterValue["width"]/2)
@@ -205,7 +222,8 @@ def extractLetter(image):
     pixelPerMM = letterValue["width"]/C_5_6_Metrics[0]
 
     # Align images with stamp in the upper right corner
-    correct_aligned, turnAngle, found, rightTop = align_correct(letter, pixelPerMM)
+    correct_aligned, turnAngle, found, rightTop = align_correct(
+        letter, pixelPerMM)
 
     # Calculate turning angle and return extracted Letter
     letterAngle = (letterAngle + turnAngle) % 360
@@ -216,9 +234,10 @@ def extractLetter(image):
     else:
         extracted = im.rotate_bound(gray, letterAngle)[
             height-yEnd:height-yStart, width-xEnd:width-xStart]
-    
+
     # debugPictures just for debug resonse (images can not ploted in functions)
-    debugPictures = [gray, binImg, erode, dilate, aligned_image, highlightedContour, letter, rightTop, correct_aligned]
+    debugPictures = [gray, binImg, erode, dilate, aligned_image,
+                     highlightedContour, letter, rightTop, correct_aligned]
 
     return extracted, letterAngle, pixelPerMM, debugPictures
 
@@ -272,7 +291,7 @@ plt.title("letter")
 
 # %% [markdown]
 # ## align_correct()
-# Ausrichten des Briefes, sodass die Briefmarke sich oben rechts befindet. 
+# Ausrichten des Briefes, sodass die Briefmarke sich oben rechts befindet.
 # Hierfür wird überprüft ob sich in der oberen rechten Ecke eine Kontour der Briefmarke finden lässt.
 # Falls ja ist der Brief bereits korrekt ausgerichtet, falss nein ist er um 180° gedreht.
 
@@ -332,7 +351,7 @@ plt.imshow(blurrAF, cmap="gray")
 # So the Contour for the Character are better against Lightning
 # %%
 binAF = cv2.adaptiveThreshold(blurrAF, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                              cv2.THRESH_BINARY, 5, 5)
+                              cv2.THRESH_BINARY_INV, 5, 5)
 plt.imshow(binAF, cmap="gray")
 plt.title("Binarisation")
 
@@ -341,8 +360,8 @@ plt.title("Binarisation")
 
 # %%
 erodeDilate = np.ones((blurrValueAF, blurrValueAF), np.uint8)
-erode = cv2.erode(binAF, erodeDilate)
-dilate = cv2.dilate(erode, erodeDilate)
+erode = cv2.dilate(binAF, erodeDilate)
+dilate = cv2.erode(erode, erodeDilate)
 plt.imshow(erode, cmap="gray")
 plt.title("erode/Dilate")
 
@@ -409,11 +428,13 @@ for index, contour in enumerate(contoursAF):
     width = rect[2]
     height = rect[3]
     # 0 because of the outer
-    if(width > 5 and height > 5 and width != widthAF and hierachyAF[0][index][3] == 0):
-        # print("index: " + str(index) + " / width: " +
-        #       str(width) + " / height: " + str(height))
+    # print("index: " + str(index) + " / width: " +
+    #       str(width) + " / height: " + str(height))
+    # print("hierarchyAF: " + str(hierachyAF[0]))
+    if(width > 5 and height > 5 and width != widthAF and hierachyAF[0][index][3] == -1):
+
         # print(hierachyAF[0][index])
-        img = dilate[y:y+height, x:x+width]
+        img = imgAF[y:y+height, x:x+width]
         character = {
             "img": img,
             "width": width,
@@ -860,7 +881,7 @@ else:
 # %%
 # Bilder
 def preprocess_segmented_image(img):
-    img = ~img
+    # img = ~img
     img = img.astype("float32")/255
     s = max(img.shape[0:2])
     f = np.zeros((s, s))

@@ -25,7 +25,7 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./briefe_abgabe/moritz_mittel_dslr_ja_3.JPG"
+imagePath = "./briefe_abgabe/Simon_gut_2phone_nein_2.jpeg"
 # imagePath = "./Briefe/mo_2.jpg"
 testingFolderPath = "./testing"
 # Kernel
@@ -319,6 +319,26 @@ addressField = letterGray[startY:endY, startX:endX]
 plt.imshow(addressField, cmap="gray")
 plt.title("addressfield")
 
+# %%
+yLightBegin = int(height/3)
+xLightBegin = int(width/2.5)
+yLightEnd = yLightBegin+100
+xLightEnd = xLightBegin+100
+lightField = letterGray[yLightBegin: yLightEnd, xLightBegin: xLightEnd]
+letterRGB = cv2.cvtColor(letterGray, cv2.COLOR_GRAY2RGB)
+cv2.rectangle(letterRGB, (xLightBegin, yLightBegin),
+              (xLightEnd, yLightEnd), (255, 0, 0), 3)
+plt.imshow(letterRGB)
+
+# %%
+plt.imshow(lightField, cmap="gray")
+
+# %%
+flattenLightArray = lightField.flatten()
+plt.hist(flattenLightArray, bins="auto")
+print(len(flattenLightArray))
+lightAverage = np.sum(flattenLightArray)/len(flattenLightArray)
+print("Durchschnitt der Beleuchtung: " + str(lightAverage))
 # %% [markdown]
 # ## relative Blurringkernel to Adressfieldheight
 # Best Blurring Result with 5 px from Brief_rotated150.jpg

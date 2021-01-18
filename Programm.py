@@ -25,7 +25,13 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-imagePath = "./briefe_abgabe/Simon_gut_2phone_nein_2.jpeg"
+# Schlechter Brief
+# imagePath = "./briefe_abgabe/moritz_schlecht_dslr_nein_2.JPG"
+# Zerstückelte Kontur
+# imagePath = "./briefe_abgabe/Simon_gut_phone_ja_2.jpg"
+# Ziffern falsch
+imagePath = "./briefe_abgabe/moritz_gut_dslr_nein_3.JPG"
+
 
 testingFolderPath = "./testing"
 # Kernel
@@ -41,16 +47,7 @@ stampZone = [74, 40]
 margin = 15
 bottomMargin = 3
 stampMinSize = [28, 15]
-# # %%
-# # Create Folder for Testing
-# index = imagePath.rfind("/")
-# lastIndex = imagePath.rfind(".")
-# imageName = imagePath[index:lastIndex]
 
-
-# testingFolder = testingFolderPath + imageName
-# print(testingFolder)
-# os.makedirs(testingFolder, exist_ok=True)
 
 # %% [markdown]
 # ## Vorbereitung des Bildes

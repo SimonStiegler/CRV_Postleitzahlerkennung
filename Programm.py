@@ -25,12 +25,8 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
-<<<<<<< HEAD
 imagePath = "./briefe_abgabe/Simon_gut_2phone_nein_2.jpeg"
-# imagePath = "./Briefe/mo_2.jpg"
-=======
-imagePath = "./briefe_abgabe/moritz_mittel_dslr_ja_3.JPG"
->>>>>>> origin/mo
+
 testingFolderPath = "./testing"
 # Kernel
 dilateErode = 1
@@ -547,9 +543,10 @@ show_images(pydash.map_(PLZ, "img"))
 dataset_folder = os.path.abspath("./emnist_dataset")
 print(dataset_folder)
 
-train_models = False                # Train Models from scratch and save weights if true otherwise load saved weights if false
+# Train Models from scratch and save weights if true otherwise load saved weights if false
+train_models = False
 eval_models = False                 # Evaluate trained models with test data
-print_model_architecture = False    
+print_model_architecture = False
 print_example_images = False        # Print example images of datasets
 
 
@@ -896,13 +893,13 @@ if eval_models:
         model.german_digit_test_img, model.german_digit_test_labels, verbose=0)
 
     print('Emnist Loss: %.2f%%, Accuracy: %.2f%%' %
-        (emnist_results[0]*100, emnist_results[1]*100))
+          (emnist_results[0]*100, emnist_results[1]*100))
     print('Emnist Letter Loss: %.2f%%, Accuracy: %.2f%%' %
-        (emnist_letter_results[0]*100, emnist_letter_results[1]*100))
+          (emnist_letter_results[0]*100, emnist_letter_results[1]*100))
     print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %
-        (mnist_results[0]*100, mnist_results[1]*100))
+          (mnist_results[0]*100, mnist_results[1]*100))
     print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %
-        (german_digits_results[0]*100, german_digits_results[1]*100))
+          (german_digits_results[0]*100, german_digits_results[1]*100))
 
 
 # %% [markdown]

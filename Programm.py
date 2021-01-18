@@ -25,8 +25,12 @@ from mlxtend.data import loadlocal_mnist
 # ## Parameters
 
 # %%
+<<<<<<< HEAD
 imagePath = "./briefe_abgabe/Simon_gut_2phone_nein_2.jpeg"
 # imagePath = "./Briefe/mo_2.jpg"
+=======
+imagePath = "./briefe_abgabe/moritz_mittel_dslr_ja_3.JPG"
+>>>>>>> origin/mo
 testingFolderPath = "./testing"
 # Kernel
 dilateErode = 1
@@ -543,8 +547,10 @@ show_images(pydash.map_(PLZ, "img"))
 dataset_folder = os.path.abspath("./emnist_dataset")
 print(dataset_folder)
 
-train_models = False  # Train Models from scratch and save weights if true
-# otherwise load weights if false
+train_models = False                # Train Models from scratch and save weights if true otherwise load saved weights if false
+eval_models = False                 # Evaluate trained models with test data
+print_model_architecture = False    
+print_example_images = False        # Print example images of datasets
 
 
 # %%
@@ -570,65 +576,65 @@ class CrvModel:
         self.mnist_save_path = "./mnist.h5"
         self.german_digit_network_save_path = "./german_digits_network.h5"
 
-        # # Read in or download raw data for models
-        # self.raw_emnist_train_img = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-train-images-idx3-ubyte.gz'))
-        # self.raw_emnist_train_labels = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-train-labels-idx1-ubyte.gz'))
-        # self.raw_emnist_test_img = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-test-images-idx3-ubyte.gz'))
-        # self.raw_emnist_test_labels = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-test-labels-idx1-ubyte.gz'))
+        # Read in or download raw data for models
+        self.raw_emnist_train_img = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-train-images-idx3-ubyte.gz'))
+        self.raw_emnist_train_labels = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-train-labels-idx1-ubyte.gz'))
+        self.raw_emnist_test_img = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-test-images-idx3-ubyte.gz'))
+        self.raw_emnist_test_labels = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-test-labels-idx1-ubyte.gz'))
 
-        # self.raw_emnist_letter_train_img = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-train-images-idx3-ubyte.gz'))
-        # self.raw_emnist_letter_train_labels = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-train-labels-idx1-ubyte.gz'))
-        # self.raw_emnist_letter_test_img = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-test-images-idx3-ubyte.gz'))
-        # self.raw_emnist_letter_test_labels = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-test-labels-idx1-ubyte.gz'))
+        self.raw_emnist_letter_train_img = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-train-images-idx3-ubyte.gz'))
+        self.raw_emnist_letter_train_labels = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-train-labels-idx1-ubyte.gz'))
+        self.raw_emnist_letter_test_img = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-test-images-idx3-ubyte.gz'))
+        self.raw_emnist_letter_test_labels = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-test-labels-idx1-ubyte.gz'))
 
-        # (self.raw_mnist_train_img, self.raw_mnist_train_labels), (self.raw_mnist_test_img,
-        #                                                           self.raw_mnist_test_labels) = tf.keras.datasets.mnist.load_data()
+        (self.raw_mnist_train_img, self.raw_mnist_train_labels), (self.raw_mnist_test_img,
+                                                                  self.raw_mnist_test_labels) = tf.keras.datasets.mnist.load_data()
 
-        # self.raw_german_digit_train_img, self.raw_german_digit_train_labels = self.load_german_digits(
-        #     'german_digits_datasets/german_train.data', 'german_digits_datasets/german_train.labels')
-        # self.raw_german_digit_test_img, self.raw_german_digit_test_labels = self.load_german_digits(
-        #     'german_digits_datasets/german_test.data', 'german_digits_datasets/german_test.labels')
+        self.raw_german_digit_train_img, self.raw_german_digit_train_labels = self.load_german_digits(
+            'german_digits_datasets/german_train.data', 'german_digits_datasets/german_train.labels')
+        self.raw_german_digit_test_img, self.raw_german_digit_test_labels = self.load_german_digits(
+            'german_digits_datasets/german_test.data', 'german_digits_datasets/german_test.labels')
 
-        # # Preprocess data
-        # self.emnist_train_img = self.preprocess_data(self.raw_emnist_train_img)
-        # self.emnist_test_img = self.preprocess_data(self.raw_emnist_test_img)
-        # self.emnist_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_train_labels)
-        # self.emnist_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_test_labels)
+        # Preprocess data
+        self.emnist_train_img = self.preprocess_data(self.raw_emnist_train_img)
+        self.emnist_test_img = self.preprocess_data(self.raw_emnist_test_img)
+        self.emnist_train_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_train_labels)
+        self.emnist_test_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_test_labels)
 
-        # self.mnist_train_img = self.preprocess_data(self.raw_mnist_train_img)
-        # self.mnist_test_img = self.preprocess_data(self.raw_mnist_test_img)
-        # self.mnist_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_mnist_train_labels)
-        # self.mnist_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_mnist_test_labels)
+        self.mnist_train_img = self.preprocess_data(self.raw_mnist_train_img)
+        self.mnist_test_img = self.preprocess_data(self.raw_mnist_test_img)
+        self.mnist_train_labels = tf.keras.utils.to_categorical(
+            self.raw_mnist_train_labels)
+        self.mnist_test_labels = tf.keras.utils.to_categorical(
+            self.raw_mnist_test_labels)
 
-        # self.emnist_letter_train_img = self.preprocess_data(
-        #     self.raw_emnist_letter_train_img)
-        # self.emnist_letter_test_img = self.preprocess_data(
-        #     self.raw_emnist_letter_test_img)
-        # self.emnist_letter_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_letter_train_labels)
-        # self.emnist_letter_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_letter_test_labels)
+        self.emnist_letter_train_img = self.preprocess_data(
+            self.raw_emnist_letter_train_img)
+        self.emnist_letter_test_img = self.preprocess_data(
+            self.raw_emnist_letter_test_img)
+        self.emnist_letter_train_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_letter_train_labels)
+        self.emnist_letter_test_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_letter_test_labels)
 
-        # self.german_digit_train_img = self.preprocess_data(
-        #     self.raw_german_digit_train_img)
-        # self.german_digit_test_img = self.preprocess_data(
-        #     self.raw_german_digit_test_img)
-        # self.german_digit_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_german_digit_train_labels)
-        # self.german_digit_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_german_digit_test_labels)
+        self.german_digit_train_img = self.preprocess_data(
+            self.raw_german_digit_train_img)
+        self.german_digit_test_img = self.preprocess_data(
+            self.raw_german_digit_test_img)
+        self.german_digit_train_labels = tf.keras.utils.to_categorical(
+            self.raw_german_digit_train_labels)
+        self.german_digit_test_labels = tf.keras.utils.to_categorical(
+            self.raw_german_digit_test_labels)
 
         # Earlystopping Callback
         self.early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor="val_loss",
@@ -722,54 +728,57 @@ model = CrvModel(dataset_folder)
 
 
 # %%
-# print("Example of Emnist Full Image")
-# model.show_random_image(model.raw_emnist_train_img,
-#                         model.emnist_classes, model.raw_emnist_train_labels)
-# print("Example of Mnist Dataset Image")
-# model.show_random_image(model.raw_mnist_train_img,
-#                         model.mnist_classes, model.raw_mnist_train_labels)
-# print("Example of Emnist Letter Dataset Image")
-# model.show_random_image(model.raw_emnist_letter_train_img,
-#                         model.emnist_letter_classes, model.raw_emnist_letter_train_labels)
-# print("Example of German Digits Dataset Image")
-# model.show_random_image(model.raw_german_digit_train_img,
-#                         model.german_digits_classes, model.raw_german_digit_train_labels)
+if print_example_images:
+    print("Example of Emnist Full Image")
+    model.show_random_image(model.raw_emnist_train_img,
+                            model.emnist_classes, model.raw_emnist_train_labels)
+    print("Example of Mnist Dataset Image")
+    model.show_random_image(model.raw_mnist_train_img,
+                            model.mnist_classes, model.raw_mnist_train_labels)
+    print("Example of Emnist Letter Dataset Image")
+    model.show_random_image(model.raw_emnist_letter_train_img,
+                            model.emnist_letter_classes, model.raw_emnist_letter_train_labels)
+    print("Example of German Digits Dataset Image")
+    model.show_random_image(model.raw_german_digit_train_img,
+                            model.german_digits_classes, model.raw_german_digit_train_labels)
 
 
 # %% [markdown]
 # ## Show model architecture and compilation of model
 
 # %%
-# print("-----------------------------------------------------------------------------")
-# print("Full Emnist Neural Network")
+model.emnist_cnn.compile(loss="categorical_crossentropy",
+                         optimizer="adam",
+                         metrics=["accuracy"],
+                         callbacks=[model.early_stopping_callback])
 
-# model.emnist_cnn.summary()
-# model.emnist_cnn.compile(loss="categorical_crossentropy",
-#                          optimizer="adam",
-#                          metrics=["accuracy"],
-#                          callbacks=[model.early_stopping_callback])
+model.emnist_letter_cnn.compile(loss="categorical_crossentropy",
+                                optimizer="adam",
+                                metrics=["accuracy"],
+                                callbacks=[model.early_stopping_callback])
 
-# print("-----------------------------------------------------------------------------")
-# print("Emnist Letter Neural Network")
-# model.emnist_letter_cnn.summary()
-# model.emnist_letter_cnn.compile(loss="categorical_crossentropy",
-#                                 optimizer="adam",
-#                                 metrics=["accuracy"],
-#                                 callbacks=[model.early_stopping_callback])
+model.mnist_cnn.compile(loss="categorical_crossentropy",
+                        optimizer="adam",
+                        metrics=["accuracy"])
 
-# print("-----------------------------------------------------------------------------")
-# print("Mnist Neural Network")
-# model.mnist_cnn.summary()
-# model.mnist_cnn.compile(loss="categorical_crossentropy",
-#                         optimizer="adam",
-#                         metrics=["accuracy"])
 
-# print("-----------------------------------------------------------------------------")
-# print("German Digits Network")
-# model.german_digits_network.summary()
-# model.german_digits_network.compile(loss="categorical_crossentropy",
-#                                     optimizer="adam",
-#                                     metrics=["accuracy"])
+model.german_digits_network.compile(loss="categorical_crossentropy",
+                                    optimizer="adam",
+                                    metrics=["accuracy"])
+
+if print_model_architecture:
+    print("-----------------------------------------------------------------------------")
+    print("Full Emnist Neural Network")
+    model.emnist_cnn.summary()
+    print("-----------------------------------------------------------------------------")
+    print("Emnist Letter Neural Network")
+    model.emnist_letter_cnn.summary()
+    print("-----------------------------------------------------------------------------")
+    print("Mnist Neural Network")
+    model.mnist_cnn.summary()
+    print("-----------------------------------------------------------------------------")
+    print("German Digits Network")
+    model.german_digits_network.summary()
 
 # %% [markdown]
 # ## Training of model or loading of weights and visualization of results
@@ -876,23 +885,24 @@ else:
 
 
 # %%
-# emnist_results = model.emnist_cnn.evaluate(
-#     model.emnist_test_img, model.emnist_test_labels, verbose=0)
-# emnist_letter_results = model.emnist_letter_cnn.evaluate(
-#     model.emnist_letter_test_img, model.emnist_letter_test_labels, verbose=0)
-# mnist_results = model.mnist_cnn.evaluate(
-#     model.mnist_test_img, model.mnist_test_labels, verbose=0)
-# german_digits_results = model.german_digits_network.evaluate(
-#     model.german_digit_test_img, model.german_digit_test_labels, verbose=0)
+if eval_models:
+    emnist_results = model.emnist_cnn.evaluate(
+        model.emnist_test_img, model.emnist_test_labels, verbose=0)
+    emnist_letter_results = model.emnist_letter_cnn.evaluate(
+        model.emnist_letter_test_img, model.emnist_letter_test_labels, verbose=0)
+    mnist_results = model.mnist_cnn.evaluate(
+        model.mnist_test_img, model.mnist_test_labels, verbose=0)
+    german_digits_results = model.german_digits_network.evaluate(
+        model.german_digit_test_img, model.german_digit_test_labels, verbose=0)
 
-# print('Emnist Loss: %.2f%%, Accuracy: %.2f%%' %
-#       (emnist_results[0]*100, emnist_results[1]*100))
-# print('Emnist Letter Loss: %.2f%%, Accuracy: %.2f%%' %
-#       (emnist_letter_results[0]*100, emnist_letter_results[1]*100))
-# print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %
-#       (mnist_results[0]*100, mnist_results[1]*100))
-# print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %
-#       (german_digits_results[0]*100, german_digits_results[1]*100))
+    print('Emnist Loss: %.2f%%, Accuracy: %.2f%%' %
+        (emnist_results[0]*100, emnist_results[1]*100))
+    print('Emnist Letter Loss: %.2f%%, Accuracy: %.2f%%' %
+        (emnist_letter_results[0]*100, emnist_letter_results[1]*100))
+    print('Mnist Loss: %.2f%%, Accuracy: %.2f%%' %
+        (mnist_results[0]*100, mnist_results[1]*100))
+    print('German Digits Loss: %.2f%%, Accuracy: %.2f%%' %
+        (german_digits_results[0]*100, german_digits_results[1]*100))
 
 
 # %% [markdown]

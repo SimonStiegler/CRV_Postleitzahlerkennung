@@ -551,65 +551,65 @@ class CrvModel:
         self.mnist_save_path = "./mnist.h5"
         self.german_digit_network_save_path = "./german_digits_network.h5"
 
-        # # Read in or download raw data for models
-        # self.raw_emnist_train_img = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-train-images-idx3-ubyte.gz'))
-        # self.raw_emnist_train_labels = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-train-labels-idx1-ubyte.gz'))
-        # self.raw_emnist_test_img = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-test-images-idx3-ubyte.gz'))
-        # self.raw_emnist_test_labels = self.read_local_data(os.path.join(
-        #     dataset_folder, 'emnist-byclass-test-labels-idx1-ubyte.gz'))
+        # Read in or download raw data for models
+        self.raw_emnist_train_img = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-train-images-idx3-ubyte.gz'))
+        self.raw_emnist_train_labels = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-train-labels-idx1-ubyte.gz'))
+        self.raw_emnist_test_img = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-test-images-idx3-ubyte.gz'))
+        self.raw_emnist_test_labels = self.read_local_data(os.path.join(
+            dataset_folder, 'emnist-byclass-test-labels-idx1-ubyte.gz'))
 
-        # self.raw_emnist_letter_train_img = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-train-images-idx3-ubyte.gz'))
-        # self.raw_emnist_letter_train_labels = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-train-labels-idx1-ubyte.gz'))
-        # self.raw_emnist_letter_test_img = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-test-images-idx3-ubyte.gz'))
-        # self.raw_emnist_letter_test_labels = self.read_local_data(
-        #     os.path.join(dataset_folder, 'emnist-letters-test-labels-idx1-ubyte.gz'))
+        self.raw_emnist_letter_train_img = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-train-images-idx3-ubyte.gz'))
+        self.raw_emnist_letter_train_labels = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-train-labels-idx1-ubyte.gz'))
+        self.raw_emnist_letter_test_img = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-test-images-idx3-ubyte.gz'))
+        self.raw_emnist_letter_test_labels = self.read_local_data(
+            os.path.join(dataset_folder, 'emnist-letters-test-labels-idx1-ubyte.gz'))
 
-        # (self.raw_mnist_train_img, self.raw_mnist_train_labels), (self.raw_mnist_test_img,
-        #                                                           self.raw_mnist_test_labels) = tf.keras.datasets.mnist.load_data()
+        (self.raw_mnist_train_img, self.raw_mnist_train_labels), (self.raw_mnist_test_img,
+                                                                  self.raw_mnist_test_labels) = tf.keras.datasets.mnist.load_data()
 
-        # self.raw_german_digit_train_img, self.raw_german_digit_train_labels = self.load_german_digits(
-        #     'german_digits_datasets/german_train.data', 'german_digits_datasets/german_train.labels')
-        # self.raw_german_digit_test_img, self.raw_german_digit_test_labels = self.load_german_digits(
-        #     'german_digits_datasets/german_test.data', 'german_digits_datasets/german_test.labels')
+        self.raw_german_digit_train_img, self.raw_german_digit_train_labels = self.load_german_digits(
+            'german_digits_datasets/german_train.data', 'german_digits_datasets/german_train.labels')
+        self.raw_german_digit_test_img, self.raw_german_digit_test_labels = self.load_german_digits(
+            'german_digits_datasets/german_test.data', 'german_digits_datasets/german_test.labels')
 
-        # # Preprocess data
-        # self.emnist_train_img = self.preprocess_data(self.raw_emnist_train_img)
-        # self.emnist_test_img = self.preprocess_data(self.raw_emnist_test_img)
-        # self.emnist_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_train_labels)
-        # self.emnist_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_test_labels)
+        # Preprocess data
+        self.emnist_train_img = self.preprocess_data(self.raw_emnist_train_img)
+        self.emnist_test_img = self.preprocess_data(self.raw_emnist_test_img)
+        self.emnist_train_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_train_labels)
+        self.emnist_test_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_test_labels)
 
-        # self.mnist_train_img = self.preprocess_data(self.raw_mnist_train_img)
-        # self.mnist_test_img = self.preprocess_data(self.raw_mnist_test_img)
-        # self.mnist_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_mnist_train_labels)
-        # self.mnist_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_mnist_test_labels)
+        self.mnist_train_img = self.preprocess_data(self.raw_mnist_train_img)
+        self.mnist_test_img = self.preprocess_data(self.raw_mnist_test_img)
+        self.mnist_train_labels = tf.keras.utils.to_categorical(
+            self.raw_mnist_train_labels)
+        self.mnist_test_labels = tf.keras.utils.to_categorical(
+            self.raw_mnist_test_labels)
 
-        # self.emnist_letter_train_img = self.preprocess_data(
-        #     self.raw_emnist_letter_train_img)
-        # self.emnist_letter_test_img = self.preprocess_data(
-        #     self.raw_emnist_letter_test_img)
-        # self.emnist_letter_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_letter_train_labels)
-        # self.emnist_letter_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_emnist_letter_test_labels)
+        self.emnist_letter_train_img = self.preprocess_data(
+            self.raw_emnist_letter_train_img)
+        self.emnist_letter_test_img = self.preprocess_data(
+            self.raw_emnist_letter_test_img)
+        self.emnist_letter_train_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_letter_train_labels)
+        self.emnist_letter_test_labels = tf.keras.utils.to_categorical(
+            self.raw_emnist_letter_test_labels)
 
-        # self.german_digit_train_img = self.preprocess_data(
-        #     self.raw_german_digit_train_img)
-        # self.german_digit_test_img = self.preprocess_data(
-        #     self.raw_german_digit_test_img)
-        # self.german_digit_train_labels = tf.keras.utils.to_categorical(
-        #     self.raw_german_digit_train_labels)
-        # self.german_digit_test_labels = tf.keras.utils.to_categorical(
-        #     self.raw_german_digit_test_labels)
+        self.german_digit_train_img = self.preprocess_data(
+            self.raw_german_digit_train_img)
+        self.german_digit_test_img = self.preprocess_data(
+            self.raw_german_digit_test_img)
+        self.german_digit_train_labels = tf.keras.utils.to_categorical(
+            self.raw_german_digit_train_labels)
+        self.german_digit_test_labels = tf.keras.utils.to_categorical(
+            self.raw_german_digit_test_labels)
 
         # Earlystopping Callback
         self.early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor="val_loss",
